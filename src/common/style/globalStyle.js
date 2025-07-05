@@ -1,4 +1,5 @@
 import {createGlobalStyle} from "styled-components";
+import {useZustandStore} from "@/common/store";
 
 import {reset} from "styled-reset";
 
@@ -29,32 +30,15 @@ export const GlobalStyles = createGlobalStyle`
   
   * {
     box-sizing: border-box;
-    --font-big: 20px;
-    --font-bold: 700;
-    --bluegreen: #20C1CB;
-    --purple: #B250FF;
-    --red: #E84933;
-
-    // Theme colors
-    --Brand-Colors:#ffc066;
-    --Primary:#ff6b57;
-    --Emphasis:#430D99;
-    --Purple-100:#7352AB;
-    --Purple-200:#573C81;
-    --Purple-300:#47325D;
-    --Purple-400:#40374A;
-    --Purple-500:#221547;
-    --Purple-600:#221547;
-    --Danger:#E25969;
-    --sienna-100:#FF9D51;
-    --Green-100:#85DBD9;
-    --Green-200:#27B1AE;
-    --Blue-100:#79ACFA;
-    --Blue-200:#27B1AE;
-
+  
     // Text Colors
     --Light:#FFFFFF;
     --Dark:#000000;
+
+    // Back Colors
+    --Back-Color:${(props) => (props.isDarkMode ? "var(--Dark)" : "var(--Light)")};
+    --Text-Color:${(props) => (props.isDarkMode ? "var(--Light)" : "var(--Dark)")};
+    --Border-Color:#8F8F8F;
 
 
     // Typography
@@ -107,10 +91,9 @@ export const GlobalStyles = createGlobalStyle`
     margin: 0;
     padding: 0;
     height: 100%;
-    
-
-    background: var(--BG-500);
-    color: var(--Dark);
+  
+    background: ${(props) => (props.isDarkMode ? "var(--Dark)" : "var(--Light)")};
+    color: ${(props) => (props.isDarkMode ? "var(--Light)" : "var(--Dark)")};
    
     font-family: Pretendard;
     
