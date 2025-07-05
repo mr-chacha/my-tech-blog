@@ -1,1 +1,1 @@
-export * from "./DashBoard";
+export {MainPage} from "./MainPage";

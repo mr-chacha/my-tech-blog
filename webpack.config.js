@@ -27,16 +27,7 @@ module.exports = {
     ],
   },
   resolve: {
-    extensions: [
-      ".jsx",
-      ".js",
-      ".json",
-      ".css",
-      ".scss",
-      ".jpg",
-      ".jpeg",
-      ".png",
-    ],
+    extensions: [".jsx", ".js", ".json", ".css", ".scss", ".jpg", ".jpeg", ".png"],
     alias: {
       "@": path.resolve(__dirname, "src"),
       "@public": path.resolve(__dirname, "public"),

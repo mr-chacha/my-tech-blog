@@ -1,5 +1,17 @@
+import {GlobalStyles} from "@/common/style";
+import {MainPage} from "@/pages";
 import React from "react";
+import {BrowserRouter, Route, Routes} from "react-router-dom";
 
-export default function App() {
-  return <div>App</div>;
+function App() {
+  return (
+    <BrowserRouter>
+      <GlobalStyles />
+      <Routes>
+        <Route path="/" element={<MainPage />} />
+      </Routes>
+    </BrowserRouter>
+  );
 }
+
+export default App;
