@@ -1,7 +1,12 @@
-import {createGlobalStyle} from "styled-components";
+import styled, {createGlobalStyle} from "styled-components";
 import {useZustandStore} from "@/common/store";
 
 import {reset} from "styled-reset";
+
+export const GlobalText = styled.div`
+  color: ${(props) => (props.color ? props.color : "var(--Text-Color)")};
+  font: ${(props) => (props.font ? props.font : "var(--Body-R)")};
+`;
 
 export const pxRem = (px) => {
   return `${Number((px / 16).toFixed(4))}rem`;
@@ -42,6 +47,7 @@ export const GlobalStyles = createGlobalStyle`
 
 
     // Typography
+    --Large-Title: 700 ${pxRem(24)}/150% Pretendard;
     --Title: 700 ${pxRem(18)}/150% Pretendard;
     --Title-R: 400 ${pxRem(18)}/150% Pretendard;
     --Headline-R: 400 ${pxRem(16)}/150% Pretendard;

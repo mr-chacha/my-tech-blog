@@ -1,6 +1,6 @@
 import {GlobalStyles} from "@/common/style";
 import {Header} from "@/components/layout";
-import {MainPage} from "@/pages";
+import {AboutPage, MainPage} from "@/pages";
 import React from "react";
 import {BrowserRouter, Route, Routes} from "react-router-dom";
 import styled from "styled-components";
@@ -16,6 +16,7 @@ function App() {
         <AppLayout>
           <Routes>
             <Route path="/" element={<MainPage />} />
+            <Route path="/about" element={<AboutPage />} />
           </Routes>
         </AppLayout>
       </Layout>
