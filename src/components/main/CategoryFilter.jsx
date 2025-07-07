@@ -1,152 +1,94 @@
-import React from "react";
+import React, {useState} from "react";
 import styled from "styled-components";
-import reactIcon from "@public/image/png/reactIcon.png";
 
-export const PostLists = () => {
-  const posts = [
-    {
-      id: 1,
-      category: "Deep Dive",
-      title: "브라우저가 화면을 그리는 과정 (Reflow, Repaint)",
-      date: "2024년 11월 17일",
-      readTime: "17분",
-      image: reactIcon,
-      href: "/blog/deep_dive/browser-paint",
-      isRecommended: false,
-    },
-    {
-      id: 2,
-      category: "Manual",
-      title: "CSS Trigger (Reflow, Repaint)",
-      date: "2024년 10월 06일",
-      readTime: "2분",
-      image: reactIcon,
-      href: "/blog/manual/css-trigger",
-      isRecommended: false,
-    },
-    {
-      id: 3,
-      category: "Manual",
-      title: "Next.js 플랫폼에 Paypal 결제 연동하기",
-      date: "2024년 06월 29일",
-      readTime: "8분",
-      image: reactIcon,
-      href: "/blog/manual/paypal",
-      isRecommended: false,
-    },
-    {
-      id: 4,
-      category: "Deep Dive",
-      title: "React useState 소스코드 분석하기",
-      date: "2024년 04월 12일",
-      readTime: "27분",
-      image: reactIcon,
-      href: "/blog/deep_dive/react_useState_source_code",
-      isRecommended: true,
-    },
-    {
-      id: 5,
-      category: "Nextjs Blog",
-      title: "기술 블로그에 댓글 기능 추가하기 (Giscus, Next.js)",
-      date: "2024년 03월 15일",
-      readTime: "6분",
-      image: reactIcon,
-      href: "/blog/nextjs_blog/giscus",
-      isRecommended: true,
-    },
-    {
-      id: 6,
-      category: "Nextjs Blog",
-      title: "Next.js 블로그 만들기 (14.1 최신 버전 + tailwind)",
-      date: "2024년 02월 26일",
-      readTime: "19분",
-      image: reactIcon,
-      href: "/blog/nextjs_blog/setup",
-      isRecommended: true,
-    },
-    {
-      id: 7,
-      category: "Career",
-      title: "[카카오 공채 바이블] 코테, 면접 준비 방법 + 꿀팁 총정리",
-      date: "2023년 03월 05일",
-      readTime: "44분",
-      image: reactIcon,
-      href: "/blog/career/kakao_bible",
-      isRecommended: true,
-    },
-    // 추가 포스트들...
+export const CategoryFilter = () => {
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  const categories = [
+    {name: "All", count: 21, href: "/blog"},
+    {name: "🔥추천", count: 5, href: "/blog/hot"},
+    {name: "Retrospect", count: 2, href: "/blog/retrospect"},
+    {name: "Product", count: 1, href: "/blog/product"},
+    {name: "Nextjs Blog", count: 3, href: "/blog/nextjs_blog"},
+    {name: "Manual", count: 5, href: "/blog/manual"},
+    {name: "Deep Dive", count: 7, href: "/blog/deep_dive"},
+    {name: "Career", count: 3, href: "/blog/career"},
   ];
 
+  const handleCategoryClick = (categoryName) => {
+    setSelectedCategory(categoryName);
+  };
+
+  const toggleDropdown = () => {
+    setIsDropdownOpen(!isDropdownOpen);
+  };
+
   return (
-    <PostGridSection>
-      <PostGrid>
-        {posts.map((post) => (
-          <PostLink key={post.id} href={post.href}>
-            <PostCard>
-              <ImageContainer>
-                {post.isRecommended && <RecommendedBadge>추천</RecommendedBadge>}
-                <PostImage src={post.image} alt={`thumbnail for ${post.title}`} />
-              </ImageContainer>
-              <PostContent>
-                <PostInfo>
-                  {post.isRecommended && <MobileRecommendedBadge>추천</MobileRecommendedBadge>}
-                  <CategoryText>{post.category}</CategoryText>
-                  <PostTitle>{post.title}</PostTitle>
-                </PostInfo>
-                <PostMeta>
-                  <MetaItem>
-                    <CalendarIcon>
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="24"
-                        height="24"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M8 2v4"></path>
-                        <path d="M16 2v4"></path>
-                        <rect width="18" height="18" x="3" y="4" rx="2"></rect>
-                        <path d="M3 10h18"></path>
-                        <path d="M8 14h.01"></path>
-                        <path d="M12 14h.01"></path>
-                        <path d="M16 14h.01"></path>
-                        <path d="M8 18h.01"></path>
-                        <path d="M12 18h.01"></path>
-                        <path d="M16 18h.01"></path>
-                      </svg>
-                    </CalendarIcon>
-                    <span>{post.date}</span>
-                  </MetaItem>
-                  <MetaItem>
-                    <ClockIcon>
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="24"
-                        height="24"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <polyline points="12 6 12 12 16.5 12"></polyline>
-                      </svg>
-                    </ClockIcon>
-                    <span>{post.readTime}</span>
-                  </MetaItem>
-                </PostMeta>
-              </PostContent>
-            </PostCard>
-          </PostLink>
-        ))}
-      </PostGrid>
-    </PostGridSection>
+    <MainContainer>
+      {/* 카테고리 필터 */}
+      <CategoryContainer>
+        <CategoryTitle>Category</CategoryTitle>
+
+        {/* 데스크톱 버전 */}
+        <DesktopSection>
+          <CategoryList>
+            {categories.map((category) => (
+              <CategoryItem key={category.name}>
+                <CategoryButton
+                  href={category.href}
+                  $isActive={selectedCategory === category.name}
+                  onClick={() => handleCategoryClick(category.name)}
+                >
+                  {category.name}
+                  <CategoryCount $isActive={selectedCategory === category.name}>({category.count})</CategoryCount>
+                </CategoryButton>
+              </CategoryItem>
+            ))}
+          </CategoryList>
+        </DesktopSection>
+
+        {/* 모바일 버전 */}
+        <MobileSection>
+          <DropdownButton onClick={toggleDropdown}>
+            <DropdownText>
+              {selectedCategory} ({categories.find((cat) => cat.name === selectedCategory)?.count})
+            </DropdownText>
+            <ChevronIcon $isOpen={isDropdownOpen}>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="m6 9 6 6 6-6"></path>
+              </svg>
+            </ChevronIcon>
+          </DropdownButton>
+
+          {isDropdownOpen && (
+            <DropdownMenu>
+              {categories.map((category) => (
+                <DropdownItem
+                  key={category.name}
+                  onClick={() => {
+                    handleCategoryClick(category.name);
+                    setIsDropdownOpen(false);
+                  }}
+                >
+                  {category.name} ({category.count})
+                </DropdownItem>
+              ))}
+            </DropdownMenu>
+          )}
+        </MobileSection>
+      </CategoryContainer>
+    </MainContainer>
   );
 };
 
