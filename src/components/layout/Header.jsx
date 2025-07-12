@@ -87,6 +87,7 @@ export const Header = () => {
 
 const HeaderContainer = styled.nav`
   position: fixed;
+  top: 0;
   z-index: 40;
   display: flex;
   width: 100%;

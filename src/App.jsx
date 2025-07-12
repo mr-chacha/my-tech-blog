@@ -26,7 +26,7 @@ function App() {
 export default App;
 
 const Layout = styled.main`
-  margin: 0 auto;
+  margin: 60px auto 0px;
   max-width: 1200px;
   background-color: var(--Back-Color);
 `;
