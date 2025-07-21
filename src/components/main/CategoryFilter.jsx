@@ -165,42 +165,22 @@ const CategoryButton = styled.a`
     box-shadow: 0 0 0 2px var(--ring-color, #3b82f6);
   }
 
-  ${(props) =>
-    props.$isActive
-      ? `
-    background-color: var(--primary-color, #000);
-    color: var(--primary-foreground, #fff);
-    
-    &:hover {
-      background-color: var(--primary-hover, rgba(0, 0, 0, 0.9));
-    }
-  `
-      : `
-    border: 1px solid var(--input-border, #e2e8f0);
-    background-color: var(--background, #fff);
-    color: var(--foreground, #000);
-    
-    &:hover {
-      background-color: var(--accent, #f1f5f9);
-      color: var(--accent-foreground, #0f172a);
-    }
-  `}
-
   @media (prefers-color-scheme: dark) {
     ${(props) =>
       props.$isActive
         ? `
-      background-color: var(--primary-dark, #fff);
-      color: var(--primary-foreground-dark, #000);
+      background-color:#000;
+      color: #fff;
     `
         : `
-      border-color: var(--input-border-dark, #475569);
-      background-color: var(--background-dark, #1e293b);
-      color: var(--foreground-dark, #fff);
+      border: 1px solid var(--Border-Color);
+      background-color:var(--Back-Color);
+      color: var(--Text-Color);
       
       &:hover {
-        background-color: var(--accent-dark, #334155);
-        color: var(--accent-foreground-dark, #fff);
+        background-color: var(--Brand-Colors-Two);
+        color: var(--Brand-Colors);
+     
       }
     `}
   }
@@ -213,7 +193,7 @@ const CategoryCount = styled.span`
   color: ${(props) => (props.$isActive ? "var(--background, #fff)" : "var(--muted-foreground, #6b7280)")};
 
   @media (prefers-color-scheme: dark) {
-    color: ${(props) => (props.$isActive ? "var(--background-dark, #000)" : "var(--muted-foreground-dark, #9ca3af)")};
+    color: ${(props) => (props.$isActive ? "#fff" : "#000")};
   }
 `;
 

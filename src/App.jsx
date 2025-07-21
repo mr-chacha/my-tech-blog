@@ -28,5 +28,6 @@ export default App;
 const Layout = styled.main`
   margin: 0 auto;
   max-width: 1200px;
+  margin-top: 64px;
   background-color: var(--Back-Color);
 `;

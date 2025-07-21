@@ -150,229 +150,6 @@ export const PostLists = () => {
   );
 };
 
-// 메인 컨테이너
-const MainContainer = styled.section`
-  margin: 0 auto;
-  width: 100%;
-  max-width: 1200px;
-  padding: 0 1rem;
-  margin-top: 2.5rem;
-`;
-
-// 카테고리 컨테이너
-const CategoryContainer = styled.div`
-  margin-bottom: 1.25rem;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.75rem;
-  padding-left: 0.5rem;
-  font-weight: bold;
-
-  @media (min-width: 640px) {
-    padding-left: 0;
-  }
-`;
-
-// 카테고리 제목
-const CategoryTitle = styled.h2`
-  font-size: 0.875rem;
-
-  @media (min-width: 640px) {
-    font-size: 1rem;
-  }
-`;
-
-// 데스크톱 섹션
-const DesktopSection = styled.section`
-  display: none;
-
-  @media (min-width: 640px) {
-    display: block;
-  }
-`;
-
-const CategoryList = styled.ul`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-`;
-
-const CategoryItem = styled.li``;
-
-// 카테고리 버튼
-const CategoryButton = styled.a`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  white-space: nowrap;
-  font-size: 0.875rem;
-  font-weight: 500;
-  transition: all 0.2s ease;
-  cursor: pointer;
-  height: auto;
-  border-radius: 0.375rem;
-  padding: 0.25rem 0.625rem;
-  text-decoration: none;
-
-  &:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 2px var(--ring-color, #3b82f6);
-  }
-
-  ${(props) =>
-    props.$isActive
-      ? `
-    background-color: var(--primary-color, #000);
-    color: var(--primary-foreground, #fff);
-    
-    &:hover {
-      background-color: var(--primary-hover, rgba(0, 0, 0, 0.9));
-    }
-  `
-      : `
-    border: 1px solid var(--input-border, #e2e8f0);
-    background-color: var(--background, #fff);
-    color: var(--foreground, #000);
-    
-    &:hover {
-      background-color: var(--accent, #f1f5f9);
-      color: var(--accent-foreground, #0f172a);
-    }
-  `}
-
-  @media (prefers-color-scheme: dark) {
-    ${(props) =>
-      props.$isActive
-        ? `
-      background-color: var(--primary-dark, #fff);
-      color: var(--primary-foreground-dark, #000);
-    `
-        : `
-      border-color: var(--input-border-dark, #475569);
-      background-color: var(--background-dark, #1e293b);
-      color: var(--foreground-dark, #fff);
-      
-      &:hover {
-        background-color: var(--accent-dark, #334155);
-        color: var(--accent-foreground-dark, #fff);
-      }
-    `}
-  }
-`;
-
-// 카테고리 개수
-const CategoryCount = styled.span`
-  margin-left: 0.25rem;
-  font-size: 0.75rem;
-  color: ${(props) => (props.$isActive ? "var(--background, #fff)" : "var(--muted-foreground, #6b7280)")};
-
-  @media (prefers-color-scheme: dark) {
-    color: ${(props) => (props.$isActive ? "var(--background-dark, #000)" : "var(--muted-foreground-dark, #9ca3af)")};
-  }
-`;
-
-// 모바일 섹션
-const MobileSection = styled.section`
-  position: relative;
-  display: block;
-
-  @media (min-width: 640px) {
-    display: none;
-  }
-`;
-
-// 드롭다운 버튼
-const DropdownButton = styled.button`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-radius: 0.375rem;
-  border: 1px solid var(--input-border, #e2e8f0);
-  background-color: var(--background, #fff);
-  padding: 0.375rem 0.75rem;
-  transition: all 0.2s ease;
-  cursor: pointer;
-  height: auto;
-  width: 180px;
-  font-size: 0.875rem;
-
-  &:focus {
-    outline: none;
-    box-shadow: 0 0 0 2px var(--ring-color, #3b82f6);
-  }
-
-  @media (prefers-color-scheme: dark) {
-    border-color: var(--input-border-dark, #475569);
-    background-color: var(--background-dark, #1e293b);
-    color: var(--foreground-dark, #fff);
-  }
-`;
-
-const DropdownText = styled.span`
-  pointer-events: none;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-`;
-
-const ChevronIcon = styled.div`
-  height: 1rem;
-  width: 1rem;
-  opacity: 0.5;
-  transition: transform 0.2s ease;
-  transform: ${(props) => (props.$isOpen ? "rotate(180deg)" : "rotate(0deg)")};
-
-  svg {
-    width: 100%;
-    height: 100%;
-  }
-`;
-
-// 드롭다운 메뉴
-const DropdownMenu = styled.div`
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  z-index: 50;
-  margin-top: 0.25rem;
-  border-radius: 0.375rem;
-  border: 1px solid var(--input-border, #e2e8f0);
-  background-color: var(--background, #fff);
-  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.05);
-  overflow: hidden;
-
-  @media (prefers-color-scheme: dark) {
-    border-color: var(--input-border-dark, #475569);
-    background-color: var(--background-dark, #1e293b);
-  }
-`;
-
-const DropdownItem = styled.div`
-  padding: 0.5rem 0.75rem;
-  font-size: 0.875rem;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-
-  &:hover {
-    background-color: var(--accent, #f1f5f9);
-    color: var(--accent-foreground, #0f172a);
-  }
-
-  @media (prefers-color-scheme: dark) {
-    color: var(--foreground-dark, #fff);
-
-    &:hover {
-      background-color: var(--accent-dark, #334155);
-      color: var(--accent-foreground-dark, #fff);
-    }
-  }
-`;
-
 // 포스트 그리드
 const PostGridSection = styled.section``;
 
@@ -403,6 +180,8 @@ const PostLink = styled.a`
   height: 100%;
   text-decoration: none;
   color: inherit;
+  border: 1px solid var(--Border-Color);
+  border-radius: 0.375rem;
 `;
 
 const PostCard = styled.li`
@@ -412,13 +191,14 @@ const PostCard = styled.li`
   height: 100%;
   overflow: hidden;
   border-radius: 0.375rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--Back-Color);
   box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
   transition: all 0.3s ease;
 
   &:hover {
+    border: 1px solid var(--Text-Color);
+
     box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
-    border-color: var(--primary-color, #3b82f6);
   }
 
   @media (min-width: 640px) {
@@ -427,14 +207,6 @@ const PostCard = styled.li`
 
     &:hover {
       box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
-    }
-  }
-
-  @media (prefers-color-scheme: dark) {
-    border-color: #475569;
-
-    &:hover {
-      border-color: white;
     }
   }
 `;

@@ -31,11 +31,7 @@ const DividerContainer = styled.div`
 
   hr {
     border: none;
-    border-top: 1px solid #e2e8f0;
-
-    @media (prefers-color-scheme: dark) {
-      border-top-color: #475569;
-    }
+    border-top: 1px solid #e5e7eb;
   }
 `;
 const PostSection = styled.div`

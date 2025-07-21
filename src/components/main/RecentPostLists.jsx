@@ -256,13 +256,14 @@ const LatestPostItem = styled.li`
   height: 100%;
   overflow: hidden;
   border-radius: 0.375rem;
-  border: 1px solid #e2e8f0;
+
   box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
   transition: all 0.3s ease;
-
+  border: 1px solid var(--Border-Color);
   &:hover {
     box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
-    border-color: var(--primary-color, #3b82f6);
+    border: 1px solid #000
+    border-radius: 0.375rem;
   }
 
   @media (min-width: 640px) {
@@ -272,14 +273,6 @@ const LatestPostItem = styled.li`
 
     &:hover {
       box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
-    }
-  }
-
-  @media (prefers-color-scheme: dark) {
-    border-color: #475569;
-
-    &:hover {
-      border-color: white;
     }
   }
 `;
@@ -461,13 +454,13 @@ const RecommendedPostItem = styled.li`
   height: 100%;
   overflow: hidden;
   border-radius: 0.375rem;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3);
   transition: all 0.3s ease;
+  border: 1px solid #e2e8f0; // 🔄 추가: 일반 모드 기본 border (연한 회색)
 
   &:hover {
     box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
-    border-color: var(--primary-color, #3b82f6);
+    border: 1px solid #000;
   }
 
   @media (max-width: 640px) {
@@ -475,10 +468,9 @@ const RecommendedPostItem = styled.li`
   }
 
   @media (prefers-color-scheme: dark) {
-    border-color: #475569;
-
+    border: 1px solid var(--Border-Color);
     &:hover {
-      border-color: white;
+      border: 1px solid #fff;
     }
   }
 `;
