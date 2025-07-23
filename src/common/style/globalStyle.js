@@ -64,6 +64,14 @@ export const GlobalStyles = createGlobalStyle`
 
 
 
+    h1{
+      font: var(--Large-Title);
+      color: var(--Text-Color);
+    }
+    h2{
+      font: var(--Title);
+      color: var(--Text-Color);
+    }
 
     ::-webkit-scrollbar {
     width: 8px;

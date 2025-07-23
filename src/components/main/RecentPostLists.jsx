@@ -250,31 +250,32 @@ const PostLink = styled.a`
 `;
 
 const LatestPostItem = styled.li`
-  display: flex;
-  flex-direction: row;
-  gap: 0;
-  height: 100%;
-  overflow: hidden;
-  border-radius: 0.375rem;
+  //   display: flex;
+  //   flex-direction: row;
+  //   gap: 0;
+  //   height: 100%;
+  //   overflow: hidden;
+  //   border-radius: 0.375rem;
 
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-  transition: all 0.3s ease;
-  border: 1px solid var(--Border-Color);
-  &:hover {
-    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
-    border: 1px solid #000
-    border-radius: 0.375rem;
-  }
+  //   box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  //   transition: all 0.3s ease;
+  //   border: 1px solid var(--Border-Color);
+  //   &:hover {
+  //     box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+  //     border: 1px solid #000
+  //     border-radius: 0.375rem;
+  //   }
 
-  @media (min-width: 640px) {
-    height: 100%;
-    flex-direction: column;
-    gap: 0.75rem;
+  //   @media (min-width: 640px) {
+  //     height: 100%;
+  //     flex-direction: column;
+  //     gap: 0.75rem;
 
-    &:hover {
-      box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
-    }
-  }
+  //     &:hover {
+  //       box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+  //     }
+  //   }
+  //
 `;
 
 // 이미지 컨테이너
