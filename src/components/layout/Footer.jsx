@@ -8,7 +8,7 @@ export const Footer = () => {
   return (
     <FooterContainer $isDarkMode={isDarkMode}>
       <SocialLinksContainer>
-        <SocialLink href="https://github.com/d5br5" target="_blank">
+        <SocialLink href="https://github.com/mr-chacha" target="_blank">
           <GitHubIcon>
             <FooterGitHubSVG color={isDarkMode ? "#fff" : "#000"} />
           </GitHubIcon>
@@ -23,7 +23,7 @@ export const Footer = () => {
       </SocialLinksContainer>
 
       <CopyrightText $isDarkMode={isDarkMode}>
-        © 2024. <AuthorName>Doh Kim</AuthorName> all rights reserved.
+        © 2025. <AuthorName>Cha Cha</AuthorName> all rights reserved.
       </CopyrightText>
     </FooterContainer>
   );

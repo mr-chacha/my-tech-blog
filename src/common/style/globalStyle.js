@@ -1,6 +1,4 @@
 import styled, {createGlobalStyle} from "styled-components";
-import {useZustandStore} from "@/common/store";
-
 import {reset} from "styled-reset";
 
 export const GlobalText = styled.div`
@@ -43,7 +41,7 @@ export const GlobalStyles = createGlobalStyle`
     // Back Colors
     --Back-Color:${(props) => (props.isDarkMode ? "var(--Dark)" : "var(--Light)")};
     --Text-Color:${(props) => (props.isDarkMode ? "var(--Light)" : "var(--Dark)")};
-    --Border-Color :${(props) => (props.isDarkMode ? "rgb(51 65 85);" : "var(--Light")};
+    --Border-Color :${(props) => (props.isDarkMode ? "rgb(51 65 85)" : "rgb(209 213 219)")};
     --Brand-Colors:#3b82f6;
     --Brand-Colors-Two:#f1f5f9;
 
@@ -92,9 +90,6 @@ export const GlobalStyles = createGlobalStyle`
     ::-webkit-scrollbar-thumb:hover {
     background: #555; /* 마우스 오버 시 색상 */
    }
-  /* } */
-
-
   }
 
   html, body {
@@ -107,10 +102,8 @@ export const GlobalStyles = createGlobalStyle`
     margin: 0;
     padding: 0;
     height: 100%;
-  
     background: ${(props) => (props.isDarkMode ? "var(--Dark)" : "var(--Light)")};
     color: ${(props) => (props.isDarkMode ? "var(--Light)" : "var(--Dark)")};
-   
     font-family: Pretendard;
     
   }

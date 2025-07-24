@@ -222,9 +222,7 @@ const SidebarTOCContainer = styled.div`
   padding-top: 0.5rem;
   padding-bottom: 0.5rem;
 
-  @media (prefers-color-scheme: dark) {
-    border-left-color: #374151;
-  }
+  border-left-color: #374151;
 `;
 
 const SidebarTOCTitle = styled.div`
@@ -232,9 +230,7 @@ const SidebarTOCTitle = styled.div`
   font-weight: 700;
   color: #374151;
 
-  @media (prefers-color-scheme: dark) {
-    color: var(--Text-Color);
-  }
+  color: var(--Text-Color);
 `;
 
 const SidebarTOCList = styled.ul`
@@ -261,12 +257,10 @@ const SidebarTOCLink = styled.a`
     color: #db2777;
   }
 
-  @media (prefers-color-scheme: dark) {
-    color: ${(props) => (props.$isActive ? "#f472b6" : "#9ca3af")};
+  color: ${(props) => (props.$isActive ? "#f472b6" : "#9ca3af")};
 
-    &:hover {
-      color: #f472b6;
-    }
+  &:hover {
+    color: #f472b6;
   }
 `;
 
@@ -306,14 +300,12 @@ const ActionButton = styled.button`
     opacity: 0.5;
   }
 
-  @media (prefers-color-scheme: dark) {
-    outline-color: #475569;
-    color: var(--Text-Color);
+  outline-color: #475569;
+  color: var(--Text-Color);
 
-    &:hover {
-      background-color: #334155;
-      color: #fff;
-    }
+  &:hover {
+    background-color: #334155;
+    color: #fff;
   }
 
   svg {
@@ -333,17 +325,21 @@ const TOCTitle = styled.h2`
   font-size: 1rem;
   font-weight: 600;
   margin-bottom: 0.75rem;
-  color: #374151;
 
-  @media (prefers-color-scheme: dark) {
-    color: var(--Text-Color);
-  }
+  color: var(--Text-Color);
+  font: var(--Title);
 `;
 
 const TOCList = styled.ul`
-  list-style: none;
   margin: 0;
   padding: 0;
+  padding-left: 1.5rem;
+  list-style: disc;
+  font: var(--Body-M);
+
+  ::marker {
+    color: ${(props) => (props.$isDarkMode ? "#4b5563" : "#d1d5db")};
+  }
 `;
 
 const TOCItem = styled.li`
@@ -358,6 +354,13 @@ const TOCLink = styled.a`
   color: var(--Text-Color);
   text-decoration: none;
   text-underline-offset: 4px;
+
+  /* border-bottom: 1px solid var(--Border-Color); */
+
+  border-bottom: 1px solid var(--Text-Color);
+  &:hover {
+    color: #f472b6;
+  }
 `;
 
 const TOCDivider = styled.hr`
@@ -365,9 +368,7 @@ const TOCDivider = styled.hr`
   border: none;
   border-top: 1px solid #e5e7eb;
 
-  @media (prefers-color-scheme: dark) {
-    border-top-color: #374151;
-  }
+  border-top-color: #374151;
 `;
 
 const DetailPageLayout = styled.div`
@@ -387,10 +388,8 @@ const DetailPageLayout = styled.div`
     padding-right: 1.5rem;
   }
 
-  @media (prefers-color-scheme: dark) {
-    font: var(--Large-Title);
-    color: var(--Text-Color);
-  }
+  font: var(--Large-Title);
+  color: var(--Text-Color);
 `;
 
 const HeaderContainer = styled.header`
@@ -422,9 +421,7 @@ const CategoryLink = styled.a`
     text-decoration: underline;
   }
 
-  @media (prefers-color-scheme: dark) {
-    color: #f472b6;
-  }
+  color: #f472b6;
 `;
 
 const MetaContainer = styled.div`
@@ -435,9 +432,8 @@ const MetaContainer = styled.div`
   line-height: 1.25rem;
   color: #6b7280;
 
-  @media (prefers-color-scheme: dark) {
-    color: #9ca3af;
-  }
+  /* 
+    color: #9ca3af; */
 `;
 
 const MetaItem = styled.div`
@@ -471,7 +467,5 @@ const Divider = styled.hr`
   border: none;
   border-top: 1px solid #e5e7eb;
 
-  @media (prefers-color-scheme: dark) {
-    border-top-color: #374151;
-  }
+  border-top-color: #374151;
 `;

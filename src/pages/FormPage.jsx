@@ -59,20 +59,22 @@ export const FormPage = () => {
       </Header>
 
       <Form onSubmit={handleSubmit}>
-        <FormGroup>
-          <Label>Code Editor</Label>
-          <EditorContainer
-            ref={editorRef}
-            className={`CodeMirror ${isDarkMode ? "cm-s-one-dark" : "cm-s-one-light"} CodeMirror-wrap`}
-          />
-        </FormGroup>
+        <div style={{display: "flex", gap: "1.5rem", width: "100%"}}>
+          <FormGroup>
+            <Label>Code Editor</Label>
+            <EditorContainer
+              ref={editorRef}
+              className={`CodeMirror ${isDarkMode ? "cm-s-one-dark" : "cm-s-one-light"} CodeMirror-wrap`}
+            />
+          </FormGroup>
 
-        <FormGroup>
-          <Label>Output Preview</Label>
-          <CodePreview>
-            <pre>{code}</pre>
-          </CodePreview>
-        </FormGroup>
+          <FormGroup>
+            <Label>Output Preview</Label>
+            <CodePreview>
+              <pre>{code}</pre>
+            </CodePreview>
+          </FormGroup>
+        </div>
 
         <ButtonGroup>
           <SubmitButton type="submit">Submit Code</SubmitButton>
@@ -152,6 +154,7 @@ const Form = styled.form`
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  width: 100%;
 `;
 
 const FormGroup = styled.div`
