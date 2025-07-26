@@ -8,9 +8,8 @@ export const MainPage = () => {
       <PostSection>
         {/* 최근 게시물 목록 */}
         <RecentPostLists />
-        <DividerContainer>
-          <hr />
-        </DividerContainer>
+        {/*hr */}
+        <MainHr />
         {/* 필터 버튼 */}
         <CategoryFilter />
         {/* 게시물 목록 */}
@@ -20,7 +19,7 @@ export const MainPage = () => {
   );
 };
 
-const DividerContainer = styled.div`
+const MainHr = styled.hr`
   margin: 0 auto;
   width: 100%;
   max-width: 1200px;
@@ -28,11 +27,8 @@ const DividerContainer = styled.div`
   margin-bottom: 2.5rem;
   padding-left: 2rem;
   padding-right: 2rem;
-
-  hr {
-    border: none;
-    border-top: 1px solid #e5e7eb;
-  }
+  border: none;
+  border-top: 1px solid #e5e7eb;
 `;
 const PostSection = styled.div`
   display: flex;

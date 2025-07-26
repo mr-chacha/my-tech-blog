@@ -1,7 +1,7 @@
 import React, {useState} from "react";
 import styled from "styled-components";
 import reactIcon from "@public/image/png/reactIcon.png";
-import {GlobalText} from "@/common/style";
+import {useCustomNav} from "@/common/util";
 
 export const RecentPostLists = () => {
   const [recentPostLists, setRecentPostLists] = useState([
@@ -50,76 +50,75 @@ export const RecentPostLists = () => {
       readTime: "44분",
     },
   ]);
+  const navHandler = useCustomNav();
 
   return (
     <MainContainer>
       {/* 최신 게시물 섹션 */}
       <LatestSection>
         <SectionTitle>최신 게시물</SectionTitle>
-        <LatestPostCard>
-          <PostLink>
-            <LatestPostItem>
-              <ImageContainer>
-                {recentPostLists[0].isRecommended && <RecommendedBadge>추천</RecommendedBadge>}
-                <PostImage src={recentPostLists[0].image} alt="thumbnail" />
-              </ImageContainer>
-              <PostContent>
-                <PostInfo>
-                  <MobileRecommendedBadge>추천</MobileRecommendedBadge>
-                  <CategoryText>{recentPostLists[0].category}</CategoryText>
-                  <PostTitle>{recentPostLists[0].title}</PostTitle>
-                </PostInfo>
-                <PostMeta>
-                  <MetaItem>
-                    <CalendarIcon>
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="24"
-                        height="24"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M8 2v4"></path>
-                        <path d="M16 2v4"></path>
-                        <rect width="18" height="18" x="3" y="4" rx="2"></rect>
-                        <path d="M3 10h18"></path>
-                        <path d="M8 14h.01"></path>
-                        <path d="M12 14h.01"></path>
-                        <path d="M16 14h.01"></path>
-                        <path d="M8 18h.01"></path>
-                        <path d="M12 18h.01"></path>
-                        <path d="M16 18h.01"></path>
-                      </svg>
-                    </CalendarIcon>
-                    <span>{recentPostLists[0].updatedAt}</span>
-                  </MetaItem>
-                  <MetaItem>
-                    <ClockIcon>
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="24"
-                        height="24"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <polyline points="12 6 12 12 16.5 12"></polyline>
-                      </svg>
-                    </ClockIcon>
-                    <span>{recentPostLists[0].viewCount}</span>
-                  </MetaItem>
-                </PostMeta>
-              </PostContent>
-            </LatestPostItem>
-          </PostLink>
+        <LatestPostCard onClick={() => navHandler(`/post/${recentPostLists[0].postId}`)}>
+          <LatestPostItem>
+            <ImageContainer>
+              {recentPostLists[0].isRecommended && <RecommendedBadge>추천</RecommendedBadge>}
+              <PostImage src={recentPostLists[0].image} alt="thumbnail" />
+            </ImageContainer>
+            <PostContent>
+              <PostInfo>
+                <MobileRecommendedBadge>추천</MobileRecommendedBadge>
+                <CategoryText>{recentPostLists[0].category}</CategoryText>
+                <PostTitle>{recentPostLists[0].title}</PostTitle>
+              </PostInfo>
+              <PostMeta>
+                <MetaItem>
+                  <CalendarIcon>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M8 2v4"></path>
+                      <path d="M16 2v4"></path>
+                      <rect width="18" height="18" x="3" y="4" rx="2"></rect>
+                      <path d="M3 10h18"></path>
+                      <path d="M8 14h.01"></path>
+                      <path d="M12 14h.01"></path>
+                      <path d="M16 14h.01"></path>
+                      <path d="M8 18h.01"></path>
+                      <path d="M12 18h.01"></path>
+                      <path d="M16 18h.01"></path>
+                    </svg>
+                  </CalendarIcon>
+                  <span>{recentPostLists[0].updatedAt}</span>
+                </MetaItem>
+                <MetaItem>
+                  <ClockIcon>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <polyline points="12 6 12 12 16.5 12"></polyline>
+                    </svg>
+                  </ClockIcon>
+                  <span>{recentPostLists[0].viewCount}</span>
+                </MetaItem>
+              </PostMeta>
+            </PostContent>
+          </LatestPostItem>
         </LatestPostCard>
       </LatestSection>
 
@@ -128,65 +127,63 @@ export const RecentPostLists = () => {
         <SectionTitle>추천 게시물 🔥</SectionTitle>
         <RecommendedPostsList>
           {recommendedPosts.map((post) => (
-            <RecommendedPostCard key={post.postId}>
-              <PostLink>
-                <RecommendedPostItem>
-                  <RecommendedPostContent>
-                    <PostInfo>
-                      <CategoryText>{post.category}</CategoryText>
-                      <PostTitle>{post.title}</PostTitle>
-                    </PostInfo>
-                    <PostMeta>
-                      <MetaItem>
-                        <CalendarIcon>
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="24"
-                            height="24"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <path d="M8 2v4"></path>
-                            <path d="M16 2v4"></path>
-                            <rect width="18" height="18" x="3" y="4" rx="2"></rect>
-                            <path d="M3 10h18"></path>
-                            <path d="M8 14h.01"></path>
-                            <path d="M12 14h.01"></path>
-                            <path d="M16 14h.01"></path>
-                            <path d="M8 18h.01"></path>
-                            <path d="M12 18h.01"></path>
-                            <path d="M16 18h.01"></path>
-                          </svg>
-                        </CalendarIcon>
-                        <span>{post.updatedAt}</span>
-                      </MetaItem>
-                      <MetaItem>
-                        <ClockIcon>
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="24"
-                            height="24"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <polyline points="12 6 12 12 16.5 12"></polyline>
-                          </svg>
-                        </ClockIcon>
-                        <span>{post.readTime}</span>
-                      </MetaItem>
-                    </PostMeta>
-                  </RecommendedPostContent>
-                </RecommendedPostItem>
-              </PostLink>
+            <RecommendedPostCard key={post.postId} onClick={() => navHandler(`/post/${post.postId}`)}>
+              <RecommendedPostItem>
+                <RecommendedPostContent>
+                  <PostInfo>
+                    <CategoryText>{post.category}</CategoryText>
+                    <PostTitle>{post.title}</PostTitle>
+                  </PostInfo>
+                  <PostMeta>
+                    <MetaItem>
+                      <CalendarIcon>
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="24"
+                          height="24"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M8 2v4"></path>
+                          <path d="M16 2v4"></path>
+                          <rect width="18" height="18" x="3" y="4" rx="2"></rect>
+                          <path d="M3 10h18"></path>
+                          <path d="M8 14h.01"></path>
+                          <path d="M12 14h.01"></path>
+                          <path d="M16 14h.01"></path>
+                          <path d="M8 18h.01"></path>
+                          <path d="M12 18h.01"></path>
+                          <path d="M16 18h.01"></path>
+                        </svg>
+                      </CalendarIcon>
+                      <span>{post.updatedAt}</span>
+                    </MetaItem>
+                    <MetaItem>
+                      <ClockIcon>
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="24"
+                          height="24"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <circle cx="12" cy="12" r="10"></circle>
+                          <polyline points="12 6 12 12 16.5 12"></polyline>
+                        </svg>
+                      </ClockIcon>
+                      <span>{post.readTime}</span>
+                    </MetaItem>
+                  </PostMeta>
+                </RecommendedPostContent>
+              </RecommendedPostItem>
             </RecommendedPostCard>
           ))}
         </RecommendedPostsList>
@@ -242,40 +239,33 @@ const SectionTitle = styled.h2`
     font-size: 1.5rem;
   }
 `;
-const LatestPostCard = styled.div``;
-
-const PostLink = styled.a`
+const LatestPostCard = styled.div`
   height: 100%;
   cursor: pointer;
 `;
 
 const LatestPostItem = styled.li`
-  //   display: flex;
-  //   flex-direction: row;
-  //   gap: 0;
-  //   height: 100%;
-  //   overflow: hidden;
-  //   border-radius: 0.375rem;
+  display: flex;
+  flex-direction: row;
+  gap: 0;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 0.375rem;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  transition: all 0.3s ease;
+  border: 1px solid var(--Border-Color);
+  border-radius: 0.375rem;
 
-  //   box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-  //   transition: all 0.3s ease;
-  //   border: 1px solid var(--Border-Color);
-  //   &:hover {
-  //     box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
-  //     border: 1px solid #000
-  //     border-radius: 0.375rem;
-  //   }
+  &:hover {
+    box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+    border: 1px solid var(--Text-Color);
+  }
 
-  //   @media (min-width: 640px) {
-  //     height: 100%;
-  //     flex-direction: column;
-  //     gap: 0.75rem;
-
-  //     &:hover {
-  //       box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
-  //     }
-  //   }
-  //
+  @media (min-width: 640px) {
+    height: 100%;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
 `;
 
 // 이미지 컨테이너
@@ -397,10 +387,6 @@ const PostMeta = styled.div`
   @media (min-width: 640px) {
     font-size: 0.875rem;
   }
-
-  @media (prefers-color-scheme: dark) {
-    color: #9ca3af;
-  }
 `;
 
 const MetaItem = styled.div`
@@ -437,7 +423,8 @@ const RecommendedPostsList = styled.div`
 
 const RecommendedPostCard = styled.div`
   flex: 1;
-
+  height: 100%;
+  cursor: pointer;
   @media (max-width: 980px) {
     &:last-child {
       display: none;
@@ -457,22 +444,15 @@ const RecommendedPostItem = styled.li`
   border-radius: 0.375rem;
   box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3);
   transition: all 0.3s ease;
-  border: 1px solid #e2e8f0; // 🔄 추가: 일반 모드 기본 border (연한 회색)
-
+  border: 1px solid var(--Border-Color);
+  border-radius: 0.375rem;
   &:hover {
     box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
-    border: 1px solid #000;
+    border: 1px solid var(--Text-Color);
   }
 
   @media (max-width: 640px) {
     padding: 0.5rem;
-  }
-
-  @media (prefers-color-scheme: dark) {
-    border: 1px solid var(--Border-Color);
-    &:hover {
-      border: 1px solid #fff;
-    }
   }
 `;
 

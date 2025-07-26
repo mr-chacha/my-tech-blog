@@ -1,4 +1,5 @@
 import {useZustandStore} from "@/common/store";
+import {GlobalText} from "@/common/style";
 import {GitHubSVG, MoonSVG, SunSVG} from "@public/Icon";
 import React, {useState, useEffect} from "react";
 import {useNavigate} from "react-router-dom";
@@ -15,6 +16,11 @@ export const Header = () => {
     } else {
       navigate(path);
     }
+  };
+
+  const handleThemeToggle = () => {
+    localStorage.setItem("isDarkMode", !isDarkMode);
+    setIsDarkMode(!isDarkMode);
   };
 
   // 상단 스크롤바 위치에 따른 프로그래스바
@@ -50,18 +56,18 @@ export const Header = () => {
       <HeaderContent>
         {/* 네비게이션 링크 */}
         <NavLinksContainer>
-          <NavLink $isActive={true} onClick={() => navHandler("/")}>
+          <NavTitle $isDarkMode={isDarkMode} onClick={() => navHandler("/")}>
             CHACHA
-          </NavLink>
-          <NavLink $isActive={false} onClick={() => navHandler("/about")}>
+          </NavTitle>
+          <GlobalText font="var(--Body-M)" onClick={() => navHandler("/about")}>
             About
-          </NavLink>
+          </GlobalText>
         </NavLinksContainer>
 
         {/* 액션 버튼들 */}
         <ActionsContainer>
           {/* 다크모드 토글 */}
-          <ThemeToggleButton onClick={() => setIsDarkMode(!isDarkMode)} $isDarkMode={isDarkMode}>
+          <ThemeToggleButton onClick={handleThemeToggle} $isDarkMode={isDarkMode}>
             <SunIcon $isDarkMode={isDarkMode}>
               <SunSVG />
             </SunIcon>
@@ -94,35 +100,14 @@ const HeaderContainer = styled.nav`
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  border-bottom: 1px solid var(--border-color, #e2e8f0);
-  background-color: var(--background, #fff);
+  border-bottom: 1px solid var(--Border-Color);
+  background-color: var(--Back-Color);
   box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
   margin-top: 0;
   top: 0;
 
   @media print {
     display: none;
-  }
-
-  /* 다크모드 지원 */
-  ${(props) =>
-    props.$isDarkMode &&
-    `
-    background-color: var(--background-dark, #1a1a1a);
-    border-bottom-color: var(--border-color-dark, #374151);
-    color: var(--foreground-dark, #fff);
-  `}
-
-  [data-theme="dark"] & {
-    background-color: var(--background-dark, #1a1a1a);
-    border-bottom-color: var(--border-color-dark, #374151);
-    color: var(--foreground-dark, #fff);
-  }
-
-  .dark & {
-    background-color: var(--background-dark, #1a1a1a);
-    border-bottom-color: var(--border-color-dark, #374151);
-    color: var(--foreground-dark, #fff);
   }
 `;
 
@@ -148,50 +133,20 @@ const HeaderContent = styled.div`
 const NavLinksContainer = styled.div`
   display: flex;
   align-items: center;
-  font-weight: 500;
+  gap: 10px;
 `;
 
-const NavLink = styled.a`
+const NavTitle = styled.div`
+  font: var(--Body-B);
   border-radius: 9999px;
   padding: 0.25rem 1rem;
-  text-align: center;
-  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: all 0.2s ease;
   cursor: pointer;
-  font-weight: 500;
-  text-decoration: none;
-
-  ${(props) =>
-    props.$isActive
-      ? `
-    background-color: var(--muted, #f1f5f9);
-    color: var(--primary, #3b82f6);
-  `
-      : `
-    color: var(--muted-foreground, #6b7280);
-    
-    &:hover {
-      color: var(--primary, #3b82f6);
-    }
-  `}
-
-  /* 다크모드 */
-  [data-theme="dark"] &,
-  .dark & {
-    ${(props) =>
-      props.$isActive
-        ? `
-      background-color: var(--muted-dark, #374151);
-      color: var(--primary-dark, #60a5fa);
-    `
-        : `
-      color: var(--muted-foreground-dark, #9ca3af);
-      
-      &:hover {
-        color: var(--primary-dark, #60a5fa);
-      }
-    `}
-  }
+  background-color: ${(props) => (props.$isDarkMode ? "#1e293b" : "#f1f5f9")};
+  color: ${(props) => (props.$isDarkMode ? "#fff" : "#3b82f6")};
 `;
 
 const ActionsContainer = styled.div`

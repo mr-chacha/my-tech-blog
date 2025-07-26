@@ -1,6 +1,6 @@
 import {create} from "zustand";
 const useZustandStore = create((set, get) => ({
-  isDarkMode: false,
+  isDarkMode: localStorage.getItem("isDarkMode") === "true" ? true : false,
   setIsDarkMode: (isDarkMode) => set({isDarkMode}),
 
   userInfo: null,

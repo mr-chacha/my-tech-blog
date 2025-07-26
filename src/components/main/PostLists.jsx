@@ -1,6 +1,7 @@
 import React from "react";
 import styled from "styled-components";
 import reactIcon from "@public/image/png/reactIcon.png";
+import {useCustomNav} from "@/common/util";
 
 export const PostLists = () => {
   const posts = [
@@ -74,14 +75,14 @@ export const PostLists = () => {
       href: "/blog/career/kakao_bible",
       isRecommended: true,
     },
-    // 추가 포스트들...
   ];
 
+  const navHandler = useCustomNav();
   return (
     <PostGridSection>
       <PostGrid>
         {posts.map((post) => (
-          <PostLink key={post.id} href={post.href}>
+          <PostBox key={post.id} onClick={() => navHandler(`/post/${post.id}`)}>
             <PostCard>
               <ImageContainer>
                 {post.isRecommended && <RecommendedBadge>추천</RecommendedBadge>}
@@ -143,7 +144,7 @@ export const PostLists = () => {
                 </PostMeta>
               </PostContent>
             </PostCard>
-          </PostLink>
+          </PostBox>
         ))}
       </PostGrid>
     </PostGridSection>
@@ -176,7 +177,7 @@ const PostGrid = styled.ul`
 `;
 
 // 포스트 카드
-const PostLink = styled.a`
+const PostBox = styled.div`
   height: 100%;
   text-decoration: none;
   color: inherit;
