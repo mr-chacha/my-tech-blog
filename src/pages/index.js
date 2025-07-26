@@ -1,3 +1,4 @@
-export default function Home() {
-  return <h1>Hello from manual Next.js setup!</h1>;
-}
+export {MainPage} from "./MainPage";
+export {AboutPage} from "./AboutPage";
+export {FormPage} from "./FormPage";
+export {DetailPage} from "./DetailPage";
