@@ -53,60 +53,70 @@ export const FormPage = () => {
 
   return (
     <Container>
-      <Header>
-        <Title>Code Editor Form</Title>
-        <ThemeToggle onClick={toggleTheme}>{isDarkMode ? "🌞 Light" : "🌙 Dark"}</ThemeToggle>
-      </Header>
+      <div style={{display: "flex", width: "100%", height: "100%"}}>
+        <LeftSection>
+          <LeftBox>
+            <LeftBoxTop></LeftBoxTop>
+          </LeftBox>
+        </LeftSection>
+        <RightSection></RightSection>
+        {/* <FormGroup>
+          <Label>Code Editor</Label>
+          <EditorContainer
+            ref={editorRef}
+            className={`CodeMirror ${isDarkMode ? "cm-s-one-dark" : "cm-s-one-light"} CodeMirror-wrap`}
+          />
+        </FormGroup>
 
-      <Form onSubmit={handleSubmit}>
-        <div style={{display: "flex", gap: "1.5rem", width: "100%"}}>
-          <FormGroup>
-            <Label>Code Editor</Label>
-            <EditorContainer
-              ref={editorRef}
-              className={`CodeMirror ${isDarkMode ? "cm-s-one-dark" : "cm-s-one-light"} CodeMirror-wrap`}
-            />
-          </FormGroup>
-
-          <FormGroup>
-            <Label>Output Preview</Label>
-            <CodePreview>
-              <pre>{code}</pre>
-            </CodePreview>
-          </FormGroup>
-        </div>
-
-        <ButtonGroup>
-          <SubmitButton type="submit">Submit Code</SubmitButton>
-          <ClearButton
-            type="button"
-            onClick={() => {
-              setCode("");
-              if (viewRef.current) {
-                viewRef.current.dispatch({
-                  changes: {
-                    from: 0,
-                    to: viewRef.current.state.doc.length,
-                    insert: "",
-                  },
-                });
-              }
-            }}
-          >
-            Clear
-          </ClearButton>
-        </ButtonGroup>
-      </Form>
+        <FormGroup>
+          <Label>Output Preview</Label>
+          <CodePreview>
+            <pre>{code}</pre>
+          </CodePreview>
+        </FormGroup> */}
+      </div>
     </Container>
   );
 };
 
+const RightSection = styled.div`
+  flex: 1 1 0%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+`;
+const LeftBoxBottom = styled.div`
+ position: fixed;
+ bottom: 0px;
+ z-index: 10;
+`;
+const LeftBoxTop = styled.div`
+  min-height: 0px;
+  padding-bottom: 4rem;
+  flex: 1 1 0%;
+  display: flex;
+  flex-direction: column;
+`;
+const LeftBox = styled.div`
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+`;
+const LeftSection = styled.div`
+  flex: 1 1 0%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 1;
+  box-shadow: rgba(0, 0, 0, 0.016) 0px 0px 8px;
+`;
 // Styled Components
 const Container = styled.div`
+  width: 100%;
+  height: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem;
-  min-height: 100vh;
 `;
 
 const Header = styled.div`
