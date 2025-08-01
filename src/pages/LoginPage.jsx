@@ -11,7 +11,7 @@ import {useNavigate} from "react-router-dom";
 import styled from "styled-components";
 
 export const LoginPage = () => {
-  const {isDarkMode} = useZustandStore();
+  const {isDarkMode, setUserInfo} = useZustandStore();
   const navigate = useNavigate();
   const [loginInfo, setLoginInfo] = useState({
     email: "",
@@ -33,7 +33,13 @@ export const LoginPage = () => {
     try {
       const provider = new GithubAuthProvider();
       const result = await signInWithPopup(auth, provider);
-      alert("GitHub 로그인 성공!");
+      setUserInfo({
+        uid: result.user.uid,
+        email: result.user.email,
+        displayName: result.user.displayName,
+        photoURL: result.user.photoURL,
+        provider: "github",
+      });
       navigate("/");
     } catch (error) {
       console.error("GitHub login error:", error);
@@ -69,9 +75,16 @@ export const LoginPage = () => {
       if (isSignUp) {
         await createUserWithEmailAndPassword(auth, loginInfo.email, loginInfo.password);
         alert("회원가입이 완료되었습니다!");
+        setIsSignUp(!isSignUp);
       } else {
-        await signInWithEmailAndPassword(auth, loginInfo.email, loginInfo.password);
-        alert("로그인 성공!");
+        const result = await signInWithEmailAndPassword(auth, loginInfo.email, loginInfo.password);
+        setUserInfo({
+          uid: result.user.uid,
+          email: result.user.email,
+          displayName: result.user.displayName,
+          photoURL: result.user.photoURL,
+          provider: "github",
+        });
         navigate("/");
       }
     } catch (error) {
