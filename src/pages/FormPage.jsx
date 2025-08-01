@@ -13,6 +13,28 @@ export const FormPage = () => {
   const tagInputRef = useRef(null);
   const editorRef = useRef(null);
   const isProcessingRef = useRef(false);
+  const editorViewRef = useRef(null);
+  const fileInputRef = useRef(null);
+
+  // 이미지 업로드 함수
+  const handleFileUpload = (event) => {
+    const file = event.target.files[0];
+    if (file && file.type.startsWith("image/")) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const imageDataUrl = e.target.result;
+        insertText("![", `](${imageDataUrl})`, file.name.split(".")[0]);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      alert("이미지 파일만 업로드 가능합니다.");
+    }
+    event.target.value = "";
+  };
+
+  const openFileDialog = () => {
+    fileInputRef.current?.click();
+  };
 
   // marked 설정
   marked.setOptions({
@@ -36,6 +58,7 @@ export const FormPage = () => {
         extensions: [
           basicSetup,
           markdown(),
+          EditorView.lineWrapping,
           EditorView.theme({
             "&": {
               fontSize: "16px",
@@ -45,6 +68,8 @@ export const FormPage = () => {
               minHeight: "400px",
               fontFamily: "'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif",
               lineHeight: "1.7",
+              wordBreak: "break-word", // CSS로도 강제 줄바꿈
+              whiteSpace: "pre-wrap", // 공백 및 줄바꿈 유지
             },
             ".cm-editor": {
               border: "none",
@@ -88,6 +113,7 @@ export const FormPage = () => {
         state,
         parent: editorRef.current,
       });
+      editorViewRef.current = view; // 에디터 인스턴스 저장
 
       return () => {
         view.destroy();
@@ -96,26 +122,83 @@ export const FormPage = () => {
   }, []);
 
   // velog 스타일 마크다운 삽입 함수들
+  // 올바른 텍스트 삽입 함수
   const insertText = (before, after = "", placeholder = "") => {
-    // 간단한 텍스트 삽입 (실제로는 에디터 API 사용)
-    const newText = `${before}${placeholder}${after}`;
-    setEditorContent((prev) => prev + `\n${newText}`);
+    if (!editorViewRef.current) return;
+
+    const view = editorViewRef.current;
+    const state = view.state;
+    const selection = state.selection.main;
+
+    // 선택된 텍스트가 있으면 그것을 사용, 없으면 placeholder 사용
+    const selectedText = state.doc.sliceString(selection.from, selection.to) || placeholder;
+    const newText = `${before}${selectedText}${after}`;
+
+    // 현재 선택 영역에 새 텍스트 삽입
+    view.dispatch({
+      changes: {
+        from: selection.from,
+        to: selection.to,
+        insert: newText,
+      },
+      selection: {
+        anchor: selection.from + before.length,
+        head: selection.from + before.length + selectedText.length,
+      },
+    });
+
+    // 에디터에 포커스 다시 주기
+    view.focus();
   };
 
   const insertHeading = (level) => {
-    const prefix = "#".repeat(level) + " ";
-    insertText(prefix, "", `제목 ${level}`);
+    if (!editorViewRef.current) return;
+
+    const view = editorViewRef.current;
+    const state = view.state;
+    const selection = state.selection.main;
+    const line = state.doc.lineAt(selection.from);
+
+    // 현재 줄이 비어있지 않으면 새 줄에 삽입
+    const isEmptyLine = line.text.trim() === "";
+    const prefix = (isEmptyLine ? "" : "\n") + "#".repeat(level) + " ";
+
+    insertText(prefix, "", "");
   };
 
-  const insertBold = () => insertText("**", "**", "굵은 텍스트");
-  const insertItalic = () => insertText("*", "*", "기울인 텍스트");
-  const insertStrike = () => insertText("~~", "~~", "취소선");
-  const insertCode = () => insertText("`", "`", "코드");
-  const insertCodeBlock = () => insertText("```\n", "\n```", "코드 블록");
-  const insertLink = () => insertText("[", "](https://)", "링크 텍스트");
-  const insertQuote = () => insertText("> ", "", "인용문");
-  const insertList = () => insertText("- ", "", "리스트 아이템");
+  const insertBold = () => insertText("**", "**", "");
+  const insertItalic = () => insertText("*", "*", "");
+  const insertStrike = () => insertText("~~", "~~", "");
+  const insertCode = () => insertText("`", "`", "");
+  const insertCodeBlock = () => insertText("```\n", "\n```", "");
+  const insertLink = () => insertText("[", "](https://)", "");
+  const insertQuote = () => insertText("> ", "", "");
+  const insertList = () => {
+    if (!editorViewRef.current) return;
 
+    const view = editorViewRef.current;
+    const state = view.state;
+    const selection = state.selection.main;
+    const line = state.doc.lineAt(selection.from);
+
+    // 줄의 시작에 삽입
+    const lineStart = line.from;
+    const prefix = "- ";
+
+    view.dispatch({
+      changes: {
+        from: lineStart,
+        to: lineStart,
+        insert: prefix,
+      },
+      selection: {
+        anchor: lineStart + prefix.length,
+        head: lineStart + prefix.length,
+      },
+    });
+
+    view.focus();
+  };
   // 기존 태그 관련 함수들
   const addTag = (value) => {
     const trimmedValue = value.trim();
@@ -183,11 +266,16 @@ export const FormPage = () => {
               </ActviveTagBox>
             </LeftBoxTop>
             <LeftBoxBottom>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileUpload}
+                style={{display: "none"}}
+              />
               <VelogToolbar>
                 <ToolGroup>
-                  <VelogToolButton onClick={() => insertHeading(1)} title="제목 1">
-                    H1
-                  </VelogToolButton>
+                  <VelogToolButton onClick={() => insertHeading(1)}>H1</VelogToolButton>
                   <VelogToolButton onClick={() => insertHeading(2)} title="제목 2">
                     H2
                   </VelogToolButton>
@@ -226,6 +314,12 @@ export const FormPage = () => {
                   </VelogToolButton>
                   <VelogToolButton onClick={insertList} title="리스트">
                     • • •
+                  </VelogToolButton>
+                </ToolGroup>
+                <ToolDivider />
+                <ToolGroup>
+                  <VelogToolButton onClick={openFileDialog} title="이미지 업로드">
+                    📁
                   </VelogToolButton>
                 </ToolGroup>
               </VelogToolbar>
@@ -288,6 +382,7 @@ const RightSection = styled.div`
   word-break: break-word;
   overflow-y: auto;
   background-color: #fbfdfc;
+  max-width: 50%;
 
   @media (max-width: 1024px) {
     display: none;
@@ -331,6 +426,11 @@ const LeftSection = styled.div`
   z-index: 1;
   box-shadow: rgba(0, 0, 0, 0.016) 0px 0px 8px;
   padding: 2rem 3rem 0 3rem;
+  max-width: 50%;
+
+  @media (max-width: 1024px) {
+    max-width: 100%;
+  }
 `;
 
 const FormContainer = styled.div`
