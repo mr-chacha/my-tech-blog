@@ -49,6 +49,32 @@ export const FormPage = () => {
             ".cm-editor": {
               border: "none",
             },
+            // 거터 관련 모든 스타일 제거
+            ".cm-gutters": {
+              display: "none !important",
+              width: "0 !important",
+              minWidth: "0 !important",
+            },
+            ".cm-gutter": {
+              display: "none !important",
+              width: "0 !important",
+            },
+            ".cm-lineNumbers": {
+              display: "none !important",
+            },
+            ".cm-gutterElement": {
+              display: "none !important",
+            },
+            // 스크롤러에서 패딩 제거
+            ".cm-scroller": {
+              fontFamily: "inherit",
+              paddingLeft: "0 !important",
+              marginLeft: "0 !important",
+            },
+            // 에디터 전체에서 왼쪽 여백 제거
+            ".cm-editor .cm-scroller": {
+              paddingLeft: "0 !important",
+            },
           }),
           EditorView.updateListener.of((update) => {
             if (update.docChanged) {
