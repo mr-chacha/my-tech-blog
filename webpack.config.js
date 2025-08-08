@@ -38,15 +38,12 @@ module.exports = {
     new HtmlWebpackPlugin({
       template: "./public/index.html",
     }),
-    // 환경변수 플러그인을 조건부로 사용
-    ...(process.env.NODE_ENV !== "production"
-      ? [
-          new DotenvWebpack({
-            path: ".env",
-            systemvars: true,
-          }),
-        ]
-      : []),
+    // ✅ 항상 환경변수 로드 (프로덕션에서도!)
+    new DotenvWebpack({
+      path: ".env",
+      systemvars: true,
+      safe: false, // .env 파일이 없어도 에러 안남
+    }),
   ],
   devServer: {
     static: "./dist",
@@ -55,5 +52,5 @@ module.exports = {
     hot: true,
     historyApiFallback: true,
   },
-  mode: "development",
+  mode: "production",
 };
