@@ -6,23 +6,49 @@ const useZustandStore = create((set, get) => ({
   userInfo: null,
   setUserInfo: (userInfo) => set({userInfo}),
 
-  isOpenModal: {
-    addFinance: true,
+  // 모달 텍스트
+  modalMessage: {
+    topMessage: "",
+    bottomMessage: "",
   },
-  openModal: (modalName) =>
+  setModalMessage: ({topMessage = "", bottomMessage = ""}) =>
+    set({
+      modalMessage: {
+        topMessage,
+        bottomMessage,
+      },
+    }),
+  // 모달 버튼
+  modalButton: {
+    cancelButton: "취소",
+    confirmButton: "확인",
+  },
+  setModalButton: ({cancelButton = "", confirmButton = ""}) =>
+    set({
+      modalButton: {
+        cancelButton,
+        confirmButton,
+      },
+    }),
+
+  activeModal: {
+    oneButtonModal: false,
+    twoButtonModal: false,
+  },
+
+  setActiveModal: (modalStates) =>
     set((state) => ({
-      isOpenModal: {
-        ...state.isOpenModal,
-        [modalName]: true,
+      activeModal: {
+        ...state.activeModal,
+        ...modalStates,
       },
     })),
-  closeModal: (modalName) =>
-    set((state) => ({
-      isOpenModal: {
-        ...state.isOpenModal,
-        [modalName]: false,
-      },
-    })),
+  // 모달 컨펌 버튼 여부
+  modalConfirmHandler: null,
+  setModalConfirmHandler: (handler) =>
+    set({
+      modalConfirmHandler: handler,
+    }),
 }));
 
 export default useZustandStore;

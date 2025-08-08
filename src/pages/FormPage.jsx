@@ -3,33 +3,286 @@ import styled from "styled-components";
 import {EditorView, basicSetup} from "codemirror";
 import {EditorState} from "@codemirror/state";
 import {markdown} from "@codemirror/lang-markdown";
-import {oneDark} from "@codemirror/theme-one-dark";
 import {marked} from "marked";
+import {db, storage} from "../server/firebase";
+import {collection, addDoc, serverTimestamp} from "firebase/firestore";
+import {ref, uploadBytes, getDownloadURL} from "firebase/storage";
 
 export const FormPage = () => {
   const [title, setTitle] = useState("");
   const [activeTab, setActiveTab] = useState([]);
   const [editorContent, setEditorContent] = useState("");
+  const [category, setCategory] = useState("");
+  const [tempFiles, setTempFiles] = useState([]); // base64 임시 파일들
+  const [uploadedFiles, setUploadedFiles] = useState([]); // 최종 업로드된 파일들
+  const [isLoading, setIsLoading] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
+
   const tagInputRef = useRef(null);
   const editorRef = useRef(null);
   const isProcessingRef = useRef(false);
   const editorViewRef = useRef(null);
   const fileInputRef = useRef(null);
+  const dropAreaRef = useRef(null);
 
-  // 이미지 업로드 함수
-  const handleFileUpload = (event) => {
-    const file = event.target.files[0];
-    if (file && file.type.startsWith("image/")) {
+  // 파일을 base64로 변환하는 함수
+  const fileToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = (e) => {
-        const imageDataUrl = e.target.result;
-        insertText("![", `](${imageDataUrl})`, file.name.split(".")[0]);
-      };
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
       reader.readAsDataURL(file);
-    } else {
+    });
+  };
+
+  // 이미지 추가 함수 (base64로 변환)
+  const handleFileUpload = async (files) => {
+    const imageFiles = Array.from(files).filter((file) => file.type.startsWith("image/"));
+
+    if (imageFiles.length === 0) {
       alert("이미지 파일만 업로드 가능합니다.");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+
+      for (const file of imageFiles) {
+        // 파일을 base64로 변환
+        const base64Url = await fileToBase64(file);
+
+        // 임시 ID 생성 (파일명 기반)
+        const timestamp = Date.now();
+        const tempId = `temp_${timestamp}_${file.name.replace(/\s+/g, "_")}`;
+
+        // 임시 파일 정보 저장
+        const tempFileInfo = {
+          id: tempId,
+          name: file.name,
+          tempName: tempId, // 에디터에서 사용할 임시 이름
+          file: file, // 원본 파일 객체 (나중에 업로드용)
+          base64Url: base64Url,
+          size: file.size,
+          type: file.type,
+          addedAt: new Date(),
+        };
+
+        setTempFiles((prev) => [...prev, tempFileInfo]);
+
+        // 마크다운 에디터에 파일명으로 삽입 (base64 URL 대신)
+        insertText("![", `](${tempId})`, file.name.split(".")[0]);
+      }
+
+      console.log("이미지를 임시로 추가했습니다. 포스트 저장 시 Firebase에 업로드됩니다.");
+    } catch (error) {
+      console.error("이미지 처리 실패:", error);
+      alert("이미지 처리에 실패했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 임시 파일명을 실제 URL로 변환하는 함수 (미리보기용)
+  const convertTempImagesToPreview = (markdownContent) => {
+    let convertedContent = markdownContent;
+
+    tempFiles.forEach((tempFile) => {
+      // 임시 파일명을 base64 URL로 교체 (미리보기용)
+      const tempImageRegex = new RegExp(`!\\[([^\\]]*)\\]\\(${tempFile.tempName}\\)`, "g");
+      convertedContent = convertedContent.replace(tempImageRegex, `![$1](${tempFile.base64Url})`);
+    });
+
+    return convertedContent;
+  };
+
+  // base64를 Firebase Storage에 업로드하고 URL 교체하는 함수
+  const uploadBase64ImagesToStorage = async () => {
+    if (tempFiles.length === 0) return {content: editorContent, files: []};
+
+    let updatedContent = editorContent;
+    const uploadedFileInfos = [];
+
+    for (const tempFile of tempFiles) {
+      try {
+        // 안전한 파일명 생성
+        const timestamp = Date.now();
+        const randomId = Math.random().toString(36).substring(2, 15);
+        const fileExtension = tempFile.name.split(".").pop();
+        const fileName = `images/${timestamp}_${randomId}.${fileExtension}`;
+
+        const storageRef = ref(storage, fileName);
+
+        // 원본 파일을 Firebase Storage에 업로드
+        const snapshot = await uploadBytes(storageRef, tempFile.file);
+        const downloadURL = await getDownloadURL(snapshot.ref);
+
+        // 에디터 내용에서 임시 파일명을 Storage URL로 교체
+        const tempImageRegex = new RegExp(`!\\[([^\\]]*)\\]\\(${tempFile.tempName}\\)`, "g");
+        updatedContent = updatedContent.replace(tempImageRegex, `![$1](${downloadURL})`);
+
+        // 업로드된 파일 정보 저장
+        const fileInfo = {
+          name: tempFile.name,
+          url: downloadURL,
+          path: fileName,
+          size: tempFile.size,
+          type: tempFile.type,
+          uploadedAt: new Date(),
+        };
+
+        uploadedFileInfos.push(fileInfo);
+
+        console.log(`✅ ${tempFile.name} 업로드 완료: ${downloadURL}`);
+      } catch (error) {
+        console.error(`❌ ${tempFile.name} 업로드 실패:`, error);
+        throw error;
+      }
+    }
+
+    setUploadedFiles(uploadedFileInfos);
+
+    // 업데이트된 내용과 파일 정보를 모두 반환
+    return {content: updatedContent, files: uploadedFileInfos};
+  };
+
+  // 포스트 저장 함수 (이미지 업로드 포함)
+  const handleSavePost = async () => {
+    // 필수 필드 검증
+    if (!title.trim()) {
+      alert("제목을 입력해주세요.");
+      return;
+    }
+
+    if (!editorContent.trim()) {
+      alert("내용을 입력해주세요.");
+      return;
+    }
+
+    if (!category.trim()) {
+      alert("카테고리를 선택해주세요.");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+
+      // base64 이미지들을 Firebase Storage에 업로드하고 URL 교체
+      const {content: finalContent, files: uploadedFileInfos} = await uploadBase64ImagesToStorage();
+
+      // 대표 이미지 설정 (첫 번째 업로드된 이미지)
+      const representativeImage = uploadedFileInfos.length > 0 ? uploadedFileInfos[0].url : null;
+
+      const postData = {
+        title: title.trim(),
+        content: finalContent,
+        category: category.trim(),
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        viewCount: 0,
+        likeCount: 0,
+        commentCount: 0,
+        image: representativeImage,
+        isRecommended: false,
+        file: uploadedFileInfos,
+        tags: activeTab,
+        published: true,
+        author: "차차",
+      };
+
+      // Firestore에 문서 추가
+      const docRef = await addDoc(collection(db, "posts"), postData);
+
+      console.log("포스트 저장 성공!");
+
+      // 폼 초기화
+      resetForm();
+    } catch (error) {
+      console.error("포스트 저장 실패:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 폼 초기화 함수
+  const resetForm = () => {
+    setTitle("");
+    setCategory("");
+    setActiveTab([]);
+    setTempFiles([]); // 임시 파일들 초기화
+    setUploadedFiles([]);
+    setEditorContent("");
+    if (editorViewRef.current) {
+      editorViewRef.current.dispatch({
+        changes: {
+          from: 0,
+          to: editorViewRef.current.state.doc.length,
+          insert: "",
+        },
+      });
+    }
+  };
+
+  // 임시 파일 삭제 함수
+  const removeTempFile = (indexToRemove) => {
+    const fileToRemove = tempFiles[indexToRemove];
+
+    // 에디터에서 해당 이미지 임시명 제거
+    if (editorViewRef.current && fileToRemove) {
+      const currentContent = editorViewRef.current.state.doc.toString();
+      const tempImageRegex = new RegExp(`!\\[([^\\]]*)\\]\\(${fileToRemove.tempName}\\)`, "g");
+      const updatedContent = currentContent.replace(tempImageRegex, "");
+
+      editorViewRef.current.dispatch({
+        changes: {
+          from: 0,
+          to: editorViewRef.current.state.doc.length,
+          insert: updatedContent,
+        },
+      });
+    }
+
+    setTempFiles((prev) => prev.filter((_, index) => index !== indexToRemove));
+  };
+
+  // 파일 입력 핸들러
+  const handleFileInputChange = async (event) => {
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      await handleFileUpload(files);
     }
     event.target.value = "";
+  };
+
+  // 드래그 앤 드롭 이벤트 핸들러들
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!dropAreaRef.current?.contains(e.relatedTarget)) {
+      setIsDragOver(false);
+    }
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      await handleFileUpload(files);
+    }
   };
 
   const openFileDialog = () => {
@@ -41,88 +294,18 @@ export const FormPage = () => {
     breaks: true,
   });
 
-  // 마크다운을 HTML로 변환
+  // 마크다운을 HTML로 변환 (임시 이미지 처리 포함)
   const convertMarkdownToHtml = (markdownText) => {
     try {
-      return marked(markdownText);
+      // 임시 이미지들을 실제 base64 URL로 변환한 후 HTML로 변환
+      const convertedContent = convertTempImagesToPreview(markdownText);
+      return marked(convertedContent);
     } catch (error) {
       return markdownText;
     }
   };
 
-  // 에디터 초기화
-  useEffect(() => {
-    if (editorRef.current) {
-      const state = EditorState.create({
-        doc: editorContent,
-        extensions: [
-          basicSetup,
-          markdown(),
-          EditorView.lineWrapping,
-          EditorView.theme({
-            "&": {
-              fontSize: "16px",
-            },
-            ".cm-content": {
-              padding: "20px",
-              minHeight: "400px",
-              fontFamily: "'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif",
-              lineHeight: "1.7",
-              wordBreak: "break-word", // CSS로도 강제 줄바꿈
-              whiteSpace: "pre-wrap", // 공백 및 줄바꿈 유지
-            },
-            ".cm-editor": {
-              border: "none",
-            },
-            // 거터 관련 모든 스타일 제거
-            ".cm-gutters": {
-              display: "none !important",
-              width: "0 !important",
-              minWidth: "0 !important",
-            },
-            ".cm-gutter": {
-              display: "none !important",
-              width: "0 !important",
-            },
-            ".cm-lineNumbers": {
-              display: "none !important",
-            },
-            ".cm-gutterElement": {
-              display: "none !important",
-            },
-            // 스크롤러에서 패딩 제거
-            ".cm-scroller": {
-              fontFamily: "inherit",
-              paddingLeft: "0 !important",
-              marginLeft: "0 !important",
-            },
-            // 에디터 전체에서 왼쪽 여백 제거
-            ".cm-editor .cm-scroller": {
-              paddingLeft: "0 !important",
-            },
-          }),
-          EditorView.updateListener.of((update) => {
-            if (update.docChanged) {
-              setEditorContent(update.state.doc.toString());
-            }
-          }),
-        ],
-      });
-
-      const view = new EditorView({
-        state,
-        parent: editorRef.current,
-      });
-      editorViewRef.current = view; // 에디터 인스턴스 저장
-
-      return () => {
-        view.destroy();
-      };
-    }
-  }, []);
-
   // velog 스타일 마크다운 삽입 함수들
-  // 올바른 텍스트 삽입 함수
   const insertText = (before, after = "", placeholder = "") => {
     if (!editorViewRef.current) return;
 
@@ -130,11 +313,9 @@ export const FormPage = () => {
     const state = view.state;
     const selection = state.selection.main;
 
-    // 선택된 텍스트가 있으면 그것을 사용, 없으면 placeholder 사용
     const selectedText = state.doc.sliceString(selection.from, selection.to) || placeholder;
     const newText = `${before}${selectedText}${after}`;
 
-    // 현재 선택 영역에 새 텍스트 삽입
     view.dispatch({
       changes: {
         from: selection.from,
@@ -147,7 +328,6 @@ export const FormPage = () => {
       },
     });
 
-    // 에디터에 포커스 다시 주기
     view.focus();
   };
 
@@ -159,7 +339,6 @@ export const FormPage = () => {
     const selection = state.selection.main;
     const line = state.doc.lineAt(selection.from);
 
-    // 현재 줄이 비어있지 않으면 새 줄에 삽입
     const isEmptyLine = line.text.trim() === "";
     const prefix = (isEmptyLine ? "" : "\n") + "#".repeat(level) + " ";
 
@@ -181,7 +360,6 @@ export const FormPage = () => {
     const selection = state.selection.main;
     const line = state.doc.lineAt(selection.from);
 
-    // 줄의 시작에 삽입
     const lineStart = line.from;
     const prefix = "- ";
 
@@ -199,7 +377,8 @@ export const FormPage = () => {
 
     view.focus();
   };
-  // 기존 태그 관련 함수들
+
+  // 태그 관련 함수들
   const addTag = (value) => {
     const trimmedValue = value.trim();
     if (trimmedValue === "" || activeTab.includes(trimmedValue)) {
@@ -236,9 +415,92 @@ export const FormPage = () => {
     setActiveTab((prev) => prev.filter((_, index) => index !== indexToRemove));
   };
 
+  // 에디터 초기화
+  useEffect(() => {
+    if (editorRef.current) {
+      const state = EditorState.create({
+        doc: editorContent,
+        extensions: [
+          basicSetup,
+          markdown(),
+          EditorView.lineWrapping,
+          EditorView.theme({
+            "&": {
+              fontSize: "16px",
+            },
+            ".cm-content": {
+              padding: "20px",
+              minHeight: "400px",
+              fontFamily: "'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif",
+              lineHeight: "1.7",
+              wordBreak: "break-word",
+              whiteSpace: "pre-wrap",
+            },
+            ".cm-editor": {
+              border: "none",
+            },
+            ".cm-gutters": {
+              display: "none !important",
+              width: "0 !important",
+              minWidth: "0 !important",
+            },
+            ".cm-gutter": {
+              display: "none !important",
+              width: "0 !important",
+            },
+            ".cm-lineNumbers": {
+              display: "none !important",
+            },
+            ".cm-gutterElement": {
+              display: "none !important",
+            },
+            ".cm-scroller": {
+              fontFamily: "inherit",
+              paddingLeft: "0 !important",
+              marginLeft: "0 !important",
+            },
+            ".cm-editor .cm-scroller": {
+              paddingLeft: "0 !important",
+            },
+          }),
+          EditorView.updateListener.of((update) => {
+            if (update.docChanged) {
+              setEditorContent(update.state.doc.toString());
+            }
+          }),
+        ],
+      });
+
+      const view = new EditorView({
+        state,
+        parent: editorRef.current,
+      });
+      editorViewRef.current = view;
+
+      return () => {
+        view.destroy();
+      };
+    }
+  }, []);
+
   return (
     <FormLayout>
-      <FormContainer>
+      <FormContainer
+        ref={dropAreaRef}
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+      >
+        {isDragOver && (
+          <DragOverlay>
+            <DragOverContent>
+              <DragIcon>📁</DragIcon>
+              <DragText>이미지를 여기에 드롭하세요</DragText>
+            </DragOverContent>
+          </DragOverlay>
+        )}
+
         <LeftSection>
           <LeftBox>
             <LeftBoxTop>
@@ -247,8 +509,25 @@ export const FormPage = () => {
                 placeholder="제목을 입력하세요"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
+                style={{color: "var(--Text-Colors)"}}
               />
               <div className="input-hr"></div>
+
+              {/* 카테고리 선택 */}
+              <CategoryBox>
+                <select value={category} onChange={(e) => setCategory(e.target.value)} className="category-select">
+                  <option value="">카테고리를 선택하세요</option>
+                  <option value="React">React</option>
+                  <option value="JavaScript">JavaScript</option>
+                  <option value="Node.js">Node.js</option>
+                  <option value="CSS">CSS</option>
+                  <option value="Python">Python</option>
+                  <option value="TypeScript">TypeScript</option>
+                  <option value="기타">기타</option>
+                </select>
+              </CategoryBox>
+
+              {/* 태그 입력 */}
               <ActviveTagBox>
                 {activeTab.length > 0 &&
                   activeTab.map((item, index) => (
@@ -265,14 +544,17 @@ export const FormPage = () => {
                 />
               </ActviveTagBox>
             </LeftBoxTop>
+
             <LeftBoxBottom>
               <input
                 ref={fileInputRef}
                 type="file"
                 accept="image/*"
-                onChange={handleFileUpload}
+                multiple
+                onChange={handleFileInputChange}
                 style={{display: "none"}}
               />
+
               <VelogToolbar>
                 <ToolGroup>
                   <VelogToolButton onClick={() => insertHeading(1)}>H1</VelogToolButton>
@@ -322,15 +604,26 @@ export const FormPage = () => {
                     📁
                   </VelogToolButton>
                 </ToolGroup>
+
+                <SaveButtonGroup>
+                  <SaveButton onClick={handleSavePost} disabled={isLoading}>
+                    {isLoading ? (tempFiles.length > 0 ? "이미지 업로드 중..." : "저장 중...") : "포스트 저장"}
+                  </SaveButton>
+                  <ResetButton onClick={resetForm} disabled={isLoading}>
+                    초기화
+                  </ResetButton>
+                </SaveButtonGroup>
               </VelogToolbar>
 
               <VelogEditorContainer ref={editorRef} />
             </LeftBoxBottom>
           </LeftBox>
         </LeftSection>
+
         <RightSection>
           <PreviewContainer>
             <div className="title-input">{title}</div>
+            {category && <CategoryPreview>카테고리: {category}</CategoryPreview>}
             <PreviewContent
               dangerouslySetInnerHTML={{
                 __html: convertMarkdownToHtml(editorContent),
@@ -343,7 +636,196 @@ export const FormPage = () => {
   );
 };
 
-// 기존 스타일 컴포넌트들 (그대로 유지)
+const HelperText = styled.div`
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background-color: #f0f9ff;
+  border-left: 3px solid #3b82f6;
+  border-radius: 0.25rem;
+`;
+
+const TempIndicator = styled.span`
+  background-color: #fbbf24;
+  color: white;
+  font-size: 0.625rem;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  font-weight: 500;
+`;
+
+const DragOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(59, 130, 246, 0.1);
+  border: 3px dashed #3b82f6;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(2px);
+`;
+
+const DragOverContent = styled.div`
+  text-align: center;
+  color: #3b82f6;
+`;
+
+const DragIcon = styled.div`
+  font-size: 4rem;
+  margin-bottom: 1rem;
+`;
+
+const DragText = styled.div`
+  font-size: 1.5rem;
+  font-weight: 600;
+`;
+
+const CategoryBox = styled.div`
+  margin-bottom: 1rem;
+
+  .category-select {
+    font: var(--Title-R);
+    font-size: 1.125rem;
+    padding: 0.5rem;
+    border: 1px solid #e1e5e9;
+    border-radius: 0.25rem;
+    color: var(--Text-Colors);
+    background-color: white;
+    min-width: 200px;
+
+    &:focus {
+      outline: none;
+      border-color: #3b82f6;
+    }
+  }
+`;
+
+const SaveButtonGroup = styled.div`
+  margin-left: auto;
+  display: flex;
+  gap: 0.5rem;
+`;
+
+const SaveButton = styled.button`
+  padding: 0.5rem 1rem;
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+
+  &:hover:not(:disabled) {
+    background-color: #2563eb;
+  }
+
+  &:disabled {
+    background-color: #9ca3af;
+    cursor: not-allowed;
+  }
+`;
+
+const ResetButton = styled.button`
+  padding: 0.5rem 1rem;
+  background-color: #6b7280;
+  color: white;
+  border: none;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+
+  &:hover:not(:disabled) {
+    background-color: #4b5563;
+  }
+
+  &:disabled {
+    background-color: #9ca3af;
+    cursor: not-allowed;
+  }
+`;
+
+const CategoryPreview = styled.div`
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-bottom: 1rem;
+  padding: 0.25rem 0.5rem;
+  background-color: #f3f4f6;
+  border-radius: 0.25rem;
+  display: inline-block;
+`;
+
+const FileList = styled.div`
+  margin-top: 2rem;
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border-radius: 0.25rem;
+
+  h4 {
+    margin: 0 0 0.75rem 0;
+    font-size: 0.875rem;
+    color: #495057;
+    font-weight: 600;
+  }
+`;
+
+const FileItem = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+  margin-bottom: 0.5rem;
+  background-color: white;
+  border-radius: 0.25rem;
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s;
+
+  &:hover {
+    border-color: #d1d5db;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  }
+`;
+
+const FileInfo = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+`;
+
+const FileIcon = styled.span`
+  font-size: 1rem;
+`;
+
+const FileName = styled.span`
+  font-size: 0.875rem;
+  color: #374151;
+  font-weight: 500;
+`;
+
+const FileSize = styled.span`
+  font-size: 0.75rem;
+  color: #6b7280;
+`;
+
+const RemoveFileButton = styled.button`
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 0.25rem;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: #fee2e2;
+  }
+`;
+
 const ActviveTag = styled.div`
   background-color: #f8f9fa;
   display: flex;
@@ -357,6 +839,11 @@ const ActviveTag = styled.div`
   color: #3b82f6;
   border-radius: 1rem;
   cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background-color: #e5e7eb;
+  }
 `;
 
 const ActviveTagBox = styled.div`
@@ -370,6 +857,12 @@ const ActviveTagBox = styled.div`
     margin-bottom: 0.75rem;
     min-width: 9rem;
     border: none;
+    color: var(--Text-Colors);
+    outline: none;
+
+    &::placeholder {
+      color: #9ca3af;
+    }
   }
 `;
 
@@ -437,6 +930,7 @@ const FormContainer = styled.div`
   display: flex;
   width: 100%;
   height: 100vh;
+  position: relative;
 
   .title-input {
     height: 66px;
@@ -445,6 +939,11 @@ const FormContainer = styled.div`
     line-height: 1.5;
     border: none;
     outline: none;
+    width: 100%;
+
+    &::placeholder {
+      color: #9ca3af;
+    }
   }
 `;
 
@@ -462,6 +961,7 @@ const VelogToolbar = styled.div`
   border-radius: 0.375rem 0.375rem 0 0;
   gap: 0.5rem;
   background-color: #fafafa;
+  flex-wrap: wrap;
 
   @media (prefers-color-scheme: dark) {
     border-color: transparent !important;
@@ -501,6 +1001,8 @@ const VelogToolButton = styled.button`
 
 const ToolDivider = styled.div`
   width: 1px;
+  height: 1.5rem;
+  background-color: #e5e7eb;
   margin: 0 0.5rem;
 
   @media (prefers-color-scheme: dark) {
@@ -555,16 +1057,16 @@ const PreviewContent = styled.div`
   }
 
   h1 {
-    font-size: 40px;
+    font-size: 2.5rem;
   }
   h2 {
-    font-size: 32px;
+    font-size: 2rem;
   }
   h3 {
-    font-size: 24px;
+    font-size: 1.5rem;
   }
   h4 {
-    font-size: 18px;
+    font-size: 1.125rem;
   }
 
   p {
@@ -582,13 +1084,17 @@ const PreviewContent = styled.div`
     padding-left: 1rem;
     margin: 1rem 0;
     color: #6b7280;
+    background-color: #f8fafc;
+    padding: 1rem;
+    border-radius: 0.25rem;
   }
 
   code {
     background-color: #f1f5f9;
     padding: 0.125rem 0.25rem;
     border-radius: 0.25rem;
-    font-family: monospace;
+    font-family: "Fira Code", monospace;
+    font-size: 0.875rem;
   }
 
   pre {
@@ -597,6 +1103,20 @@ const PreviewContent = styled.div`
     border-radius: 0.375rem;
     overflow-x: auto;
     margin: 1rem 0;
+    border: 1px solid #e5e7eb;
+
+    code {
+      background: none;
+      padding: 0;
+    }
+  }
+
+  img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 0.5rem;
+    margin: 1rem 0;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   }
 
   strong {
@@ -609,5 +1129,14 @@ const PreviewContent = styled.div`
 
   del {
     text-decoration: line-through;
+  }
+
+  a {
+    color: #3b82f6;
+    text-decoration: underline;
+
+    &:hover {
+      color: #2563eb;
+    }
   }
 `;
