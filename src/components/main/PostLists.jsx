@@ -70,7 +70,7 @@ export const PostLists = ({postLists}) => {
                   src={post.image || reactIcon}
                   alt={`thumbnail for ${post.title || "게시물"}`}
                   onError={(e) => {
-                    e.target.src = reactIcon; // 이미지 로드 실패 시 기본 이미지로 대체
+                    e.target.src = reactIcon;
                   }}
                 />
               </ImageContainer>
@@ -137,7 +137,10 @@ export const PostLists = ({postLists}) => {
   );
 };
 
-// 포스트 그리드
+const NoPostsMessage = styled.div`
+  text-align: center;
+  color: #6b7280;
+`;
 const PostGridSection = styled.section``;
 
 const PostGrid = styled.ul`
@@ -162,7 +165,6 @@ const PostGrid = styled.ul`
   }
 `;
 
-// 포스트 카드
 const PostBox = styled.div`
   height: 100%;
   text-decoration: none;
@@ -198,7 +200,6 @@ const PostCard = styled.li`
   }
 `;
 
-// 이미지 컨테이너
 const ImageContainer = styled.div`
   position: relative;
   aspect-ratio: 16/9;
@@ -258,7 +259,6 @@ const PostImage = styled.img`
   color: transparent;
 `;
 
-// 포스트 콘텐츠
 const PostContent = styled.div`
   position: relative;
   display: flex;
@@ -305,7 +305,6 @@ const PostTitle = styled.h2`
   }
 `;
 
-// 메타 정보
 const PostMeta = styled.div`
   display: flex;
   justify-content: space-between;

@@ -4,8 +4,6 @@ import reactIcon from "@public/image/png/reactIcon.png";
 import {useCustomNav} from "@/common/util";
 
 export const RecentPostLists = ({recentPostLists}) => {
-  console.log("recentPostLists", recentPostLists);
-
   // 날짜 포맷팅 함수
   const formatDate = (timestamp) => {
     if (!timestamp) return "";
@@ -35,16 +33,14 @@ export const RecentPostLists = ({recentPostLists}) => {
         .replace(/\s$/, "일");
     }
 
-    // 문자열인 경우 그대로 반환
     return timestamp;
   };
 
-  // 읽는 시간 계산 함수 (대략적으로 글자 수 기반)
   const calculateReadTime = (content) => {
     if (!content) return "1분";
 
-    const wordsPerMinute = 200; // 한국어 기준 분당 읽기 속도
-    const wordCount = content.length / 2; // 대략적인 단어 수 계산
+    const wordsPerMinute = 200;
+    const wordCount = content.length / 2;
     const readTime = Math.ceil(wordCount / wordsPerMinute);
 
     return `${readTime}분`;
@@ -65,7 +61,7 @@ export const RecentPostLists = ({recentPostLists}) => {
                 src={latestPost.image || reactIcon}
                 alt="thumbnail"
                 onError={(e) => {
-                  e.target.src = reactIcon; // 이미지 로드 실패 시 기본 이미지로 대체
+                  e.target.src = reactIcon;
                 }}
               />
             </ImageContainer>
@@ -198,7 +194,6 @@ export const RecentPostLists = ({recentPostLists}) => {
   );
 };
 
-// 메인 컨테이너
 const MainContainer = styled.div`
   margin: 0 auto;
   width: 100%;
@@ -220,7 +215,6 @@ const MainContainer = styled.div`
   }
 `;
 
-// 섹션 공통 스타일
 const Section = styled.section`
   flex: 1;
   width: 100%;
@@ -274,7 +268,6 @@ const LatestPostItem = styled.li`
   }
 `;
 
-// 이미지 컨테이너
 const ImageContainer = styled.div`
   position: relative;
   aspect-ratio: 16/9;
@@ -382,7 +375,6 @@ const PostTitle = styled.h2`
   }
 `;
 
-// 메타 정보
 const PostMeta = styled.div`
   display: flex;
   justify-content: space-between;
@@ -419,7 +411,6 @@ const ClockIcon = styled.div`
   }
 `;
 
-// 추천 게시물 스타일
 const RecommendedPostsList = styled.div`
   display: flex;
   flex-direction: column;
