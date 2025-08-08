@@ -1,4 +1,4 @@
-const DotenvWebpack = require("dotenv-webpack"); // 이 부분이 필요합니다!
+const DotenvWebpack = require("dotenv-webpack");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const path = require("path");
 
@@ -6,8 +6,7 @@ module.exports = {
   entry: "./src/index.js",
   output: {
     path: path.resolve(__dirname, "dist"),
-    filename: "[name].[contenthash].js",
-    chunkFilename: "[name].[contenthash].chunk.js",
+    filename: "bundle.js",
     clean: true,
     publicPath: "/",
   },
@@ -23,7 +22,7 @@ module.exports = {
         use: ["style-loader", "css-loader"],
       },
       {
-        test: /\.(png|jpe?g|gif|webp|svg)$/i, // 이미지 파일 처리
+        test: /\.(png|jpe?g|gif|webp|svg)$/i,
         type: "asset/resource",
       },
     ],
@@ -39,17 +38,22 @@ module.exports = {
     new HtmlWebpackPlugin({
       template: "./public/index.html",
     }),
-    new DotenvWebpack({
-      path: ".env",
-      systemvars: true,
-    }),
+    // 환경변수 플러그인을 조건부로 사용
+    ...(process.env.NODE_ENV !== "production"
+      ? [
+          new DotenvWebpack({
+            path: ".env",
+            systemvars: true,
+          }),
+        ]
+      : []),
   ],
   devServer: {
     static: "./dist",
     port: 3000,
     open: true,
     hot: true,
-    historyApiFallback: true, // 모든 요청을 index.html로 리디렉션
+    historyApiFallback: true,
   },
   mode: "development",
 };
