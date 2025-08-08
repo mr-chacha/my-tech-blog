@@ -6,7 +6,8 @@ module.exports = {
   entry: "./src/index.js",
   output: {
     path: path.resolve(__dirname, "dist"),
-    filename: "bundle.js",
+    filename: "[name].[contenthash].js",
+    chunkFilename: "[name].[contenthash].chunk.js",
     clean: true,
     publicPath: "/",
   },
@@ -39,7 +40,7 @@ module.exports = {
       template: "./public/index.html",
     }),
     new DotenvWebpack({
-      path: ".env.local",
+      path: ".env",
       systemvars: true,
     }),
   ],
