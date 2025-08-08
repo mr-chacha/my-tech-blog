@@ -3,96 +3,82 @@ import styled from "styled-components";
 import reactIcon from "@public/image/png/reactIcon.png";
 import {useCustomNav} from "@/common/util";
 
-export const PostLists = () => {
-  const posts = [
-    {
-      id: 1,
-      category: "Deep Dive",
-      title: "브라우저가 화면을 그리는 과정 (Reflow, Repaint)",
-      date: "2024년 11월 17일",
-      readTime: "17분",
-      image: reactIcon,
-      href: "/blog/deep_dive/browser-paint",
-      isRecommended: false,
-    },
-    {
-      id: 2,
-      category: "Manual",
-      title: "CSS Trigger (Reflow, Repaint)",
-      date: "2024년 10월 06일",
-      readTime: "2분",
-      image: reactIcon,
-      href: "/blog/manual/css-trigger",
-      isRecommended: false,
-    },
-    {
-      id: 3,
-      category: "Manual",
-      title: "Next.js 플랫폼에 Paypal 결제 연동하기",
-      date: "2024년 06월 29일",
-      readTime: "8분",
-      image: reactIcon,
-      href: "/blog/manual/paypal",
-      isRecommended: false,
-    },
-    {
-      id: 4,
-      category: "Deep Dive",
-      title: "React useState 소스코드 분석하기",
-      date: "2024년 04월 12일",
-      readTime: "27분",
-      image: reactIcon,
-      href: "/blog/deep_dive/react_useState_source_code",
-      isRecommended: true,
-    },
-    {
-      id: 5,
-      category: "Nextjs Blog",
-      title: "기술 블로그에 댓글 기능 추가하기 (Giscus, Next.js)",
-      date: "2024년 03월 15일",
-      readTime: "6분",
-      image: reactIcon,
-      href: "/blog/nextjs_blog/giscus",
-      isRecommended: true,
-    },
-    {
-      id: 6,
-      category: "Nextjs Blog",
-      title: "Next.js 블로그 만들기 (14.1 최신 버전 + tailwind)",
-      date: "2024년 02월 26일",
-      readTime: "19분",
-      image: reactIcon,
-      href: "/blog/nextjs_blog/setup",
-      isRecommended: true,
-    },
-    {
-      id: 7,
-      category: "Career",
-      title: "[카카오 공채 바이블] 코테, 면접 준비 방법 + 꿀팁 총정리",
-      date: "2023년 03월 05일",
-      readTime: "44분",
-      image: reactIcon,
-      href: "/blog/career/kakao_bible",
-      isRecommended: true,
-    },
-  ];
-
+export const PostLists = ({postLists}) => {
   const navHandler = useCustomNav();
+  // 날짜 포맷팅 함수
+  const formatDate = (timestamp) => {
+    if (!timestamp) return "";
+
+    // Firebase Timestamp 객체인 경우
+    if (timestamp.toDate) {
+      return timestamp
+        .toDate()
+        .toLocaleDateString("ko-KR", {
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+        })
+        .replace(/\./g, "년 ")
+        .replace(/\s$/, "일");
+    }
+
+    // 일반 Date 객체인 경우
+    if (timestamp instanceof Date) {
+      return timestamp
+        .toLocaleDateString("ko-KR", {
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+        })
+        .replace(/\./g, "년 ")
+        .replace(/\s$/, "일");
+    }
+
+    // 문자열인 경우 그대로 반환
+    return timestamp;
+  };
+
+  // 읽는 시간 계산 함수 (대략적으로 글자 수 기반)
+  const calculateReadTime = (content) => {
+    if (!content) return "1분";
+
+    const wordsPerMinute = 200; // 한국어 기준 분당 읽기 속도
+    const wordCount = content.length / 2; // 대략적인 단어 수 계산
+    const readTime = Math.ceil(wordCount / wordsPerMinute);
+
+    return `${readTime}분`;
+  };
+
+  // 빈 배열인 경우 처리
+  if (!postLists || postLists.length === 0) {
+    return (
+      <PostGridSection>
+        <NoPostsMessage>더 많은 게시물이 곧 업데이트될 예정입니다!</NoPostsMessage>
+      </PostGridSection>
+    );
+  }
+
   return (
     <PostGridSection>
       <PostGrid>
-        {posts.map((post) => (
+        {postLists.map((post) => (
           <PostBox key={post.id} onClick={() => navHandler(`/post/${post.id}`)}>
             <PostCard>
               <ImageContainer>
                 {post.isRecommended && <RecommendedBadge>추천</RecommendedBadge>}
-                <PostImage src={post.image} alt={`thumbnail for ${post.title}`} />
+                <PostImage
+                  src={post.image || reactIcon}
+                  alt={`thumbnail for ${post.title || "게시물"}`}
+                  onError={(e) => {
+                    e.target.src = reactIcon; // 이미지 로드 실패 시 기본 이미지로 대체
+                  }}
+                />
               </ImageContainer>
               <PostContent>
                 <PostInfo>
                   {post.isRecommended && <MobileRecommendedBadge>추천</MobileRecommendedBadge>}
-                  <CategoryText>{post.category}</CategoryText>
-                  <PostTitle>{post.title}</PostTitle>
+                  <CategoryText>{post.category || "기타"}</CategoryText>
+                  <PostTitle>{post.title || "제목 없음"}</PostTitle>
                 </PostInfo>
                 <PostMeta>
                   <MetaItem>
@@ -120,7 +106,7 @@ export const PostLists = () => {
                         <path d="M16 18h.01"></path>
                       </svg>
                     </CalendarIcon>
-                    <span>{post.date}</span>
+                    <span>{formatDate(post.updatedAt || post.createdAt)}</span>
                   </MetaItem>
                   <MetaItem>
                     <ClockIcon>
@@ -139,7 +125,7 @@ export const PostLists = () => {
                         <polyline points="12 6 12 12 16.5 12"></polyline>
                       </svg>
                     </ClockIcon>
-                    <span>{post.readTime}</span>
+                    <span>{calculateReadTime(post.content)}</span>
                   </MetaItem>
                 </PostMeta>
               </PostContent>

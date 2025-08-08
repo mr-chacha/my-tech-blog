@@ -3,13 +3,19 @@ import styled from "styled-components";
 import {EditorView, basicSetup} from "codemirror";
 import {EditorState} from "@codemirror/state";
 import {markdown} from "@codemirror/lang-markdown";
-import {oneDark} from "@codemirror/theme-one-dark";
 import {marked} from "marked";
+import {db, storage} from "../server/firebase";
+import {collection, addDoc, serverTimestamp} from "firebase/firestore";
+import {ref, uploadBytes, getDownloadURL} from "firebase/storage";
 
 export const FormPage = () => {
   const [title, setTitle] = useState("");
   const [activeTab, setActiveTab] = useState([]);
   const [editorContent, setEditorContent] = useState("");
+  const [category, setCategory] = useState("");
+  const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+
   const tagInputRef = useRef(null);
   const editorRef = useRef(null);
   const isProcessingRef = useRef(false);
@@ -17,19 +23,117 @@ export const FormPage = () => {
   const fileInputRef = useRef(null);
 
   // 이미지 업로드 함수
-  const handleFileUpload = (event) => {
+  const handleFileUpload = async (event) => {
     const file = event.target.files[0];
     if (file && file.type.startsWith("image/")) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const imageDataUrl = e.target.result;
-        insertText("![", `](${imageDataUrl})`, file.name.split(".")[0]);
-      };
-      reader.readAsDataURL(file);
+      try {
+        setIsLoading(true);
+
+        // Firebase Storage에 이미지 업로드
+        const timestamp = Date.now();
+        const fileName = `images/${timestamp}_${file.name}`;
+        const storageRef = ref(storage, fileName);
+
+        const snapshot = await uploadBytes(storageRef, file);
+        const downloadURL = await getDownloadURL(snapshot.ref);
+
+        // 업로드된 파일 정보 저장
+        const fileInfo = {
+          name: file.name,
+          url: downloadURL,
+          path: fileName,
+          size: file.size,
+          type: file.type,
+          uploadedAt: new Date(),
+        };
+
+        setUploadedFiles((prev) => [...prev, fileInfo]);
+
+        // 마크다운 에디터에 이미지 삽입
+        insertText("![", `](${downloadURL})`, file.name.split(".")[0]);
+      } catch (error) {
+        console.error("이미지 업로드 실패:", error);
+        alert("이미지 업로드에 실패했습니다.");
+      } finally {
+        setIsLoading(false);
+      }
     } else {
       alert("이미지 파일만 업로드 가능합니다.");
     }
     event.target.value = "";
+  };
+
+  // 포스트 저장 함수
+  const handleSavePost = async () => {
+    // 필수 필드 검증
+    if (!title.trim()) {
+      alert("제목을 입력해주세요.");
+      return;
+    }
+
+    if (!editorContent.trim()) {
+      alert("내용을 입력해주세요.");
+      return;
+    }
+
+    if (!category.trim()) {
+      alert("카테고리를 선택해주세요.");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const representativeImage = uploadedFiles.length > 0 ? uploadedFiles[0].url : null; // 또는 기본 이미지 URL
+      const postData = {
+        title: title.trim(),
+        content: editorContent,
+        category: category.trim(),
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        viewCount: 0,
+        likeCount: 0,
+        commentCount: 0,
+        image: representativeImage,
+        isRecommended: false,
+
+        file: uploadedFiles,
+        tags: activeTab,
+        published: true,
+        author: "차차",
+      };
+
+      // Firestore에 문서 추가
+      const docRef = await addDoc(collection(db, "posts"), postData);
+      console.log("docRef", docRef);
+      if (docRef.id) {
+      }
+
+      // 폼 초기화 (선택사항)
+      // resetForm();
+    } catch (error) {
+      console.error("포스트 저장 실패:", error);
+      alert("포스트 저장에 실패했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 폼 초기화 함수
+  const resetForm = () => {
+    setTitle("");
+    setCategory("");
+    setActiveTab([]);
+    setUploadedFiles([]);
+    setEditorContent("");
+    if (editorViewRef.current) {
+      editorViewRef.current.dispatch({
+        changes: {
+          from: 0,
+          to: editorViewRef.current.state.doc.length,
+          insert: "",
+        },
+      });
+    }
   };
 
   const openFileDialog = () => {
@@ -49,77 +153,6 @@ export const FormPage = () => {
       return markdownText;
     }
   };
-
-  // 에디터 초기화
-  useEffect(() => {
-    if (editorRef.current) {
-      const state = EditorState.create({
-        doc: editorContent,
-        extensions: [
-          basicSetup,
-          markdown(),
-          EditorView.lineWrapping,
-          EditorView.theme({
-            "&": {
-              fontSize: "16px",
-            },
-            ".cm-content": {
-              padding: "20px",
-              minHeight: "400px",
-              fontFamily: "'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif",
-              lineHeight: "1.7",
-              wordBreak: "break-word", // CSS로도 강제 줄바꿈
-              whiteSpace: "pre-wrap", // 공백 및 줄바꿈 유지
-            },
-            ".cm-editor": {
-              border: "none",
-            },
-            // 거터 관련 모든 스타일 제거
-            ".cm-gutters": {
-              display: "none !important",
-              width: "0 !important",
-              minWidth: "0 !important",
-            },
-            ".cm-gutter": {
-              display: "none !important",
-              width: "0 !important",
-            },
-            ".cm-lineNumbers": {
-              display: "none !important",
-            },
-            ".cm-gutterElement": {
-              display: "none !important",
-            },
-            // 스크롤러에서 패딩 제거
-            ".cm-scroller": {
-              fontFamily: "inherit",
-              paddingLeft: "0 !important",
-              marginLeft: "0 !important",
-            },
-            // 에디터 전체에서 왼쪽 여백 제거
-            ".cm-editor .cm-scroller": {
-              paddingLeft: "0 !important",
-            },
-          }),
-          EditorView.updateListener.of((update) => {
-            if (update.docChanged) {
-              setEditorContent(update.state.doc.toString());
-            }
-          }),
-        ],
-      });
-
-      const view = new EditorView({
-        state,
-        parent: editorRef.current,
-      });
-      editorViewRef.current = view; // 에디터 인스턴스 저장
-
-      return () => {
-        view.destroy();
-      };
-    }
-  }, []);
 
   // velog 스타일 마크다운 삽입 함수들
   // 올바른 텍스트 삽입 함수
@@ -232,9 +265,81 @@ export const FormPage = () => {
     }
   };
 
+  // 태그 삭제
   const removeTag = (indexToRemove) => {
     setActiveTab((prev) => prev.filter((_, index) => index !== indexToRemove));
   };
+
+  // 에디터 초기화
+  useEffect(() => {
+    if (editorRef.current) {
+      const state = EditorState.create({
+        doc: editorContent,
+        extensions: [
+          basicSetup,
+          markdown(),
+          EditorView.lineWrapping,
+          EditorView.theme({
+            "&": {
+              fontSize: "16px",
+            },
+            ".cm-content": {
+              padding: "20px",
+              minHeight: "400px",
+              fontFamily: "'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif",
+              lineHeight: "1.7",
+              wordBreak: "break-word", // CSS로도 강제 줄바꿈
+              whiteSpace: "pre-wrap", // 공백 및 줄바꿈 유지
+            },
+            ".cm-editor": {
+              border: "none",
+            },
+            // 거터 관련 모든 스타일 제거
+            ".cm-gutters": {
+              display: "none !important",
+              width: "0 !important",
+              minWidth: "0 !important",
+            },
+            ".cm-gutter": {
+              display: "none !important",
+              width: "0 !important",
+            },
+            ".cm-lineNumbers": {
+              display: "none !important",
+            },
+            ".cm-gutterElement": {
+              display: "none !important",
+            },
+            // 스크롤러에서 패딩 제거
+            ".cm-scroller": {
+              fontFamily: "inherit",
+              paddingLeft: "0 !important",
+              marginLeft: "0 !important",
+            },
+            // 에디터 전체에서 왼쪽 여백 제거
+            ".cm-editor .cm-scroller": {
+              paddingLeft: "0 !important",
+            },
+          }),
+          EditorView.updateListener.of((update) => {
+            if (update.docChanged) {
+              setEditorContent(update.state.doc.toString());
+            }
+          }),
+        ],
+      });
+
+      const view = new EditorView({
+        state,
+        parent: editorRef.current,
+      });
+      editorViewRef.current = view; // 에디터 인스턴스 저장
+
+      return () => {
+        view.destroy();
+      };
+    }
+  }, []);
 
   return (
     <FormLayout>
@@ -247,8 +352,22 @@ export const FormPage = () => {
                 placeholder="제목을 입력하세요"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
+                style={{color: "var(--Text-Colors)"}}
               />
               <div className="input-hr"></div>
+
+              {/* 카테고리 선택 추가 */}
+              <CategoryBox>
+                <select value={category} onChange={(e) => setCategory(e.target.value)} className="category-select">
+                  <option value="">카테고리를 선택하세요</option>
+                  <option value="React">React</option>
+                  <option value="JavaScript">JavaScript</option>
+                  <option value="Node.js">Node.js</option>
+                  <option value="CSS">CSS</option>
+                  <option value="기타">기타</option>
+                </select>
+              </CategoryBox>
+
               <ActviveTagBox>
                 {activeTab.length > 0 &&
                   activeTab.map((item, index) => (
@@ -322,6 +441,15 @@ export const FormPage = () => {
                     📁
                   </VelogToolButton>
                 </ToolGroup>
+
+                <SaveButtonGroup>
+                  <SaveButton onClick={handleSavePost} disabled={isLoading}>
+                    {isLoading ? "저장 중..." : "포스트 저장"}
+                  </SaveButton>
+                  <ResetButton onClick={resetForm} disabled={isLoading}>
+                    초기화
+                  </ResetButton>
+                </SaveButtonGroup>
               </VelogToolbar>
 
               <VelogEditorContainer ref={editorRef} />
@@ -331,11 +459,22 @@ export const FormPage = () => {
         <RightSection>
           <PreviewContainer>
             <div className="title-input">{title}</div>
+            {category && <CategoryPreview>카테고리: {category}</CategoryPreview>}
             <PreviewContent
               dangerouslySetInnerHTML={{
                 __html: convertMarkdownToHtml(editorContent),
               }}
             />
+            {uploadedFiles.length > 0 && (
+              <FileList>
+                <h4>업로드된 파일들:</h4>
+                {uploadedFiles.map((file, index) => (
+                  <FileItem key={index}>
+                    📁 {file.name} ({Math.round(file.size / 1024)}KB)
+                  </FileItem>
+                ))}
+              </FileList>
+            )}
           </PreviewContainer>
         </RightSection>
       </FormContainer>
@@ -343,7 +482,102 @@ export const FormPage = () => {
   );
 };
 
-// 기존 스타일 컴포넌트들 (그대로 유지)
+// 새로운 스타일 컴포넌트들 추가
+const CategoryBox = styled.div`
+  margin-bottom: 1rem;
+
+  .category-select {
+    font: var(--Title-R);
+    font-size: 1.125rem;
+    padding: 0.5rem;
+    border: 1px solid #e1e5e9;
+    border-radius: 0.25rem;
+    color: var(--Text-Colors);
+    background-color: white;
+    min-width: 200px;
+
+    &:focus {
+      outline: none;
+      border-color: #3b82f6;
+    }
+  }
+`;
+
+const SaveButtonGroup = styled.div`
+  margin-left: auto;
+  display: flex;
+  gap: 0.5rem;
+`;
+
+const SaveButton = styled.button`
+  padding: 0.5rem 1rem;
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+
+  &:hover:not(:disabled) {
+    background-color: #2563eb;
+  }
+
+  &:disabled {
+    background-color: #9ca3af;
+    cursor: not-allowed;
+  }
+`;
+
+const ResetButton = styled.button`
+  padding: 0.5rem 1rem;
+  background-color: #6b7280;
+  color: white;
+  border: none;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+
+  &:hover:not(:disabled) {
+    background-color: #4b5563;
+  }
+
+  &:disabled {
+    background-color: #9ca3af;
+    cursor: not-allowed;
+  }
+`;
+
+const CategoryPreview = styled.div`
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-bottom: 1rem;
+  padding: 0.25rem 0.5rem;
+  background-color: #f3f4f6;
+  border-radius: 0.25rem;
+  display: inline-block;
+`;
+
+const FileList = styled.div`
+  margin-top: 2rem;
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border-radius: 0.25rem;
+
+  h4 {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.875rem;
+    color: #495057;
+  }
+`;
+
+const FileItem = styled.div`
+  font-size: 0.75rem;
+  color: #6c757d;
+  margin-bottom: 0.25rem;
+`;
+
 const ActviveTag = styled.div`
   background-color: #f8f9fa;
   display: flex;
@@ -370,6 +604,7 @@ const ActviveTagBox = styled.div`
     margin-bottom: 0.75rem;
     min-width: 9rem;
     border: none;
+    color: var(--Text-Colors);
   }
 `;
 

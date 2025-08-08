@@ -3,71 +3,77 @@ import styled from "styled-components";
 import reactIcon from "@public/image/png/reactIcon.png";
 import {useCustomNav} from "@/common/util";
 
-export const RecentPostLists = () => {
-  const [recentPostLists, setRecentPostLists] = useState([
-    {
-      postId: 1,
-      category: "Product",
-      title: "DAU 4만 서비스 제작, 운영 후기 (서버 비용 100만원..?)",
-      content: "개발블로그 컨텐츠",
-      createdAt: "2025-01-01",
-      updatedAt: "2025년 05월 25일",
-      viewCount: "42분",
-      likeCount: 100,
-      commentCount: 100,
-      image: reactIcon,
-      isRecommended: true,
-    },
-  ]);
+export const RecentPostLists = ({recentPostLists}) => {
+  console.log("recentPostLists", recentPostLists);
 
-  const [recommendedPosts] = useState([
-    {
-      postId: 2,
-      category: "Deep Dive",
-      title: "React useState 소스코드 분석하기",
-      updatedAt: "2024년 04월 12일",
-      readTime: "27분",
-    },
-    {
-      postId: 3,
-      category: "Nextjs Blog",
-      title: "기술 블로그에 댓글 기능 추가하기 (Giscus, Next.js)",
-      updatedAt: "2024년 03월 15일",
-      readTime: "6분",
-    },
-    {
-      postId: 4,
-      category: "Nextjs Blog",
-      title: "Next.js 블로그 만들기 (14.1 최신 버전 + tailwind)",
-      updatedAt: "2024년 02월 26일",
-      readTime: "19분",
-    },
-    {
-      postId: 5,
-      category: "Career",
-      title: "[카카오 공채 바이블] 코테, 면접 준비 방법 + 꿀팁 총정리",
-      updatedAt: "2023년 03월 05일",
-      readTime: "44분",
-    },
-  ]);
+  // 날짜 포맷팅 함수
+  const formatDate = (timestamp) => {
+    if (!timestamp) return "";
+
+    // Firebase Timestamp 객체인 경우
+    if (timestamp.toDate) {
+      return timestamp
+        .toDate()
+        .toLocaleDateString("ko-KR", {
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+        })
+        .replace(/\./g, "년 ")
+        .replace(/\s$/, "일");
+    }
+
+    // 일반 Date 객체인 경우
+    if (timestamp instanceof Date) {
+      return timestamp
+        .toLocaleDateString("ko-KR", {
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+        })
+        .replace(/\./g, "년 ")
+        .replace(/\s$/, "일");
+    }
+
+    // 문자열인 경우 그대로 반환
+    return timestamp;
+  };
+
+  // 읽는 시간 계산 함수 (대략적으로 글자 수 기반)
+  const calculateReadTime = (content) => {
+    if (!content) return "1분";
+
+    const wordsPerMinute = 200; // 한국어 기준 분당 읽기 속도
+    const wordCount = content.length / 2; // 대략적인 단어 수 계산
+    const readTime = Math.ceil(wordCount / wordsPerMinute);
+
+    return `${readTime}분`;
+  };
+
   const navHandler = useCustomNav();
-
+  const latestPost = recentPostLists[0];
   return (
     <MainContainer>
       {/* 최신 게시물 섹션 */}
       <LatestSection>
         <SectionTitle>최신 게시물</SectionTitle>
-        <LatestPostCard onClick={() => navHandler(`/post/${recentPostLists[0].postId}`)}>
+        <LatestPostCard onClick={() => navHandler(`/post/${latestPost.id}`)}>
           <LatestPostItem>
             <ImageContainer>
-              {recentPostLists[0].isRecommended && <RecommendedBadge>추천</RecommendedBadge>}
-              <PostImage src={recentPostLists[0].image} alt="thumbnail" />
+              {latestPost.isRecommended && <RecommendedBadge>추천</RecommendedBadge>}
+              <PostImage
+                src={latestPost.image || reactIcon}
+                alt="thumbnail"
+                onError={(e) => {
+                  e.target.src = reactIcon; // 이미지 로드 실패 시 기본 이미지로 대체
+                }}
+              />
             </ImageContainer>
             <PostContent>
               <PostInfo>
-                <MobileRecommendedBadge>추천</MobileRecommendedBadge>
-                <CategoryText>{recentPostLists[0].category}</CategoryText>
-                <PostTitle>{recentPostLists[0].title}</PostTitle>
+                {latestPost.isRecommended && <MobileRecommendedBadge>추천</MobileRecommendedBadge>}
+                <CategoryText>{latestPost.category || "기타"}</CategoryText>
+                <PostTitle>{latestPost.title || "제목 없음"}</PostTitle>
               </PostInfo>
               <PostMeta>
                 <MetaItem>
@@ -95,7 +101,7 @@ export const RecentPostLists = () => {
                       <path d="M16 18h.01"></path>
                     </svg>
                   </CalendarIcon>
-                  <span>{recentPostLists[0].updatedAt}</span>
+                  <span>{formatDate(latestPost.updatedAt || latestPost.createdAt)}</span>
                 </MetaItem>
                 <MetaItem>
                   <ClockIcon>
@@ -114,80 +120,80 @@ export const RecentPostLists = () => {
                       <polyline points="12 6 12 12 16.5 12"></polyline>
                     </svg>
                   </ClockIcon>
-                  <span>{recentPostLists[0].viewCount}</span>
+                  <span>{calculateReadTime(latestPost.content)}</span>
                 </MetaItem>
               </PostMeta>
             </PostContent>
           </LatestPostItem>
         </LatestPostCard>
       </LatestSection>
-
-      {/* 추천 게시물 섹션 */}
-      <RecommendedSection>
-        <SectionTitle>추천 게시물 🔥</SectionTitle>
-        <RecommendedPostsList>
-          {recommendedPosts.map((post) => (
-            <RecommendedPostCard key={post.postId} onClick={() => navHandler(`/post/${post.postId}`)}>
-              <RecommendedPostItem>
-                <RecommendedPostContent>
-                  <PostInfo>
-                    <CategoryText>{post.category}</CategoryText>
-                    <PostTitle>{post.title}</PostTitle>
-                  </PostInfo>
-                  <PostMeta>
-                    <MetaItem>
-                      <CalendarIcon>
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="24"
-                          height="24"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <path d="M8 2v4"></path>
-                          <path d="M16 2v4"></path>
-                          <rect width="18" height="18" x="3" y="4" rx="2"></rect>
-                          <path d="M3 10h18"></path>
-                          <path d="M8 14h.01"></path>
-                          <path d="M12 14h.01"></path>
-                          <path d="M16 14h.01"></path>
-                          <path d="M8 18h.01"></path>
-                          <path d="M12 18h.01"></path>
-                          <path d="M16 18h.01"></path>
-                        </svg>
-                      </CalendarIcon>
-                      <span>{post.updatedAt}</span>
-                    </MetaItem>
-                    <MetaItem>
-                      <ClockIcon>
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="24"
-                          height="24"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <circle cx="12" cy="12" r="10"></circle>
-                          <polyline points="12 6 12 12 16.5 12"></polyline>
-                        </svg>
-                      </ClockIcon>
-                      <span>{post.readTime}</span>
-                    </MetaItem>
-                  </PostMeta>
-                </RecommendedPostContent>
-              </RecommendedPostItem>
-            </RecommendedPostCard>
-          ))}
-        </RecommendedPostsList>
-      </RecommendedSection>
+      {recentPostLists.length > 1 && (
+        <RecommendedSection>
+          <SectionTitle>다른 게시물들</SectionTitle>
+          <RecommendedPostsList>
+            {recentPostLists.slice(1, 5).map((post) => (
+              <RecommendedPostCard key={post.id} onClick={() => navHandler(`/post/${post.id}`)}>
+                <RecommendedPostItem>
+                  <RecommendedPostContent>
+                    <PostInfo>
+                      <CategoryText>{post.category || "기타"}</CategoryText>
+                      <PostTitle>{post.title || "제목 없음"}</PostTitle>
+                    </PostInfo>
+                    <PostMeta>
+                      <MetaItem>
+                        <CalendarIcon>
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="24"
+                            height="24"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M8 2v4"></path>
+                            <path d="M16 2v4"></path>
+                            <rect width="18" height="18" x="3" y="4" rx="2"></rect>
+                            <path d="M3 10h18"></path>
+                            <path d="M8 14h.01"></path>
+                            <path d="M12 14h.01"></path>
+                            <path d="M16 14h.01"></path>
+                            <path d="M8 18h.01"></path>
+                            <path d="M12 18h.01"></path>
+                            <path d="M16 18h.01"></path>
+                          </svg>
+                        </CalendarIcon>
+                        <span>{formatDate(post.updatedAt || post.createdAt)}</span>
+                      </MetaItem>
+                      <MetaItem>
+                        <ClockIcon>
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="24"
+                            height="24"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16.5 12"></polyline>
+                          </svg>
+                        </ClockIcon>
+                        <span>{calculateReadTime(post.content)}</span>
+                      </MetaItem>
+                    </PostMeta>
+                  </RecommendedPostContent>
+                </RecommendedPostItem>
+              </RecommendedPostCard>
+            ))}
+          </RecommendedPostsList>
+        </RecommendedSection>
+      )}
     </MainContainer>
   );
 };
