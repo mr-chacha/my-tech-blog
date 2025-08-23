@@ -49,7 +49,7 @@ function AppContent() {
               <Route path="/" element={<MainPage />} />
               <Route path="/about" element={<AboutPage />} />
               <Route path="/form" element={<FormPage />} />
-              <Route path="/post/:id" element={<DetailPage />} />
+              <Route path="/post/:detailId" element={<DetailPage />} />
               {/* 로그인된 사용자가 /login에 접근하려 할 때 메인으로 리다이렉트 */}
               <Route path="/login" element={<Navigate to="/" replace />} />
             </Routes>

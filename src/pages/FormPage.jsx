@@ -13,8 +13,7 @@ export const FormPage = () => {
   const [activeTab, setActiveTab] = useState([]);
   const [editorContent, setEditorContent] = useState("");
   const [category, setCategory] = useState("");
-  const [tempFiles, setTempFiles] = useState([]); // base64 임시 파일들
-  const [uploadedFiles, setUploadedFiles] = useState([]); // 최종 업로드된 파일들
+  const [tempFiles, setTempFiles] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
 
@@ -138,8 +137,6 @@ export const FormPage = () => {
         throw error;
       }
     }
-
-    setUploadedFiles(uploadedFileInfos);
 
     // 업데이트된 내용과 파일 정보를 모두 반환
     return {content: updatedContent, files: uploadedFileInfos};
@@ -695,7 +692,8 @@ const CategoryBox = styled.div`
     border: 1px solid #e1e5e9;
     border-radius: 0.25rem;
     color: var(--Text-Colors);
-    background-color: white;
+    background-color: var(--Back-Color);
+    color: var(--Text-Color);
     min-width: 200px;
 
     &:focus {

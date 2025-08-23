@@ -1,8 +1,34 @@
-import React, {useState} from "react";
+import React, {useState, useEffect} from "react";
+import {useParams} from "react-router-dom";
 import styled from "styled-components";
+import {useBlogApis} from "@/common/apis";
+import {formatTimestamp} from "@/common/util";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import remarkBreaks from "remark-breaks"; // 이 플러그인 추가 설치
 
 export const DetailPage = () => {
+  const {fetchDetailPost} = useBlogApis();
   const [activeId, setActiveId] = useState("");
+  const [detailPost, setDetailPost] = useState("");
+
+  const {detailId} = useParams();
+
+  const getDetailPost = async (detailId) => {
+    try {
+      const postData = await fetchDetailPost(detailId);
+      setDetailPost(postData);
+      console.log("받아온 postData:", postData);
+    } catch (error) {
+      console.error("포스트 가져오기 오류:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (detailId) {
+      getDetailPost(detailId);
+    }
+  }, [detailId]);
 
   const tocItems = [
     {title: "페이팔 계정 생성", href: "#페이팔-계정-생성", isSubItem: false, id: "페이팔-계정-생성"},
@@ -39,10 +65,10 @@ export const DetailPage = () => {
     <DetailPageLayout>
       {/* 헤더 */}
       <HeaderContainer>
-        <Title>Next.js 플랫폼에 Paypal 결제 연동하기</Title>
+        <Title>{detailPost.title}</Title>
 
         <CategoryContainer>
-          <CategoryLink href="/blog/manual">Manual</CategoryLink>
+          <CategoryLink href="/blog/manual">{detailPost.category}</CategoryLink>
         </CategoryContainer>
 
         <MetaContainer>
@@ -71,27 +97,7 @@ export const DetailPage = () => {
                 <path d="M16 18h.01"></path>
               </svg>
             </CalendarIcon>
-            <span>2024년 06월 29일</span>
-          </MetaItem>
-
-          <MetaItem>
-            <ClockIcon>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <circle cx="12" cy="12" r="10"></circle>
-                <polyline points="12 6 12 12 16.5 12"></polyline>
-              </svg>
-            </ClockIcon>
-            <span>8분</span>
+            <span>{formatTimestamp(detailPost.createdAt)}</span>
           </MetaItem>
         </MetaContainer>
 
@@ -111,7 +117,6 @@ export const DetailPage = () => {
         <TOCDivider />
       </TOCNavigation>
 
-      {/* 🔥 데스크톱용 사이드바 목차 추가 */}
       <article>
         <SidebarContainer>
           <StickyWrapper>
@@ -184,13 +189,130 @@ export const DetailPage = () => {
             </ActionButtonsContainer>
           </StickyWrapper>
         </SidebarContainer>
-        <h2>페이팔 계정 생성</h2>
+        <MarkdownContainer>
+          <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>{detailPost.content}</ReactMarkdown>
+        </MarkdownContainer>
       </article>
     </DetailPageLayout>
   );
 };
 
-// 🔥 새로 추가된 사이드바 스타일드 컴포넌트들
+const MarkdownContainer = styled.div`
+  /* 헤딩 스타일링 */
+  h1 {
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    line-height: 1.2;
+    color: var(--Text-Color);
+  }
+
+  h2 {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+    line-height: 1.3;
+    color: var(--Text-Color);
+  }
+
+  h3 {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-top: 1.25rem;
+    margin-bottom: 0.5rem;
+    color: var(--Text-Color);
+  }
+
+  /* 텍스트 스타일링 */
+  p {
+    font-size: var(--Headline-R);
+    line-height: 1.7;
+    margin-bottom: 1rem;
+    color: var(--Text-Color);
+    white-space: pre-line;
+  }
+
+  strong {
+    font-weight: bold;
+    color: var(--Text-Color);
+  }
+
+  em {
+    font-style: italic;
+    color: var(--Text-Color);
+  }
+
+  /* 이미지 스타일링 */
+  img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 1.5rem auto;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  }
+
+  /* 코드 스타일링 */
+  code {
+    background: #f1f5f9;
+    padding: 3px 6px;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-family: Monaco, Consolas, monospace;
+    color: var(--Back-Color);
+  }
+
+  pre {
+    background: #f8fafc;
+    padding: 16px;
+    border-radius: 8px;
+    overflow: auto;
+    margin: 1.5rem 0;
+    border: 1px solid #e2e8f0;
+
+    code {
+      background: none;
+      padding: 0;
+      font-family: Monaco, Consolas, monospace;
+      font-size: 0.875rem;
+    }
+  }
+
+  /* 리스트 스타일링 */
+  ul {
+    margin-left: 1.5rem;
+    margin-bottom: 1rem;
+    list-style-type: disc;
+  }
+
+  li {
+    margin-bottom: 0.5rem;
+    line-height: 1.6;
+  }
+
+  /* 링크 스타일링 */
+  a {
+    color: #3b82f6;
+    text-decoration: underline;
+
+    &:hover {
+      color: #2563eb;
+    }
+  }
+
+  /* 인용문 스타일링 */
+  blockquote {
+    border-left: 4px solid #3b82f6;
+    padding-left: 1rem;
+    margin: 1rem 0;
+    color: #6b7280;
+    background-color: #f8fafc;
+    padding: 1rem;
+    border-radius: 0.25rem;
+  }
+`;
 const SidebarContainer = styled.aside`
   position: absolute;
   top: -200px;
@@ -354,9 +476,6 @@ const TOCLink = styled.a`
   color: var(--Text-Color);
   text-decoration: none;
   text-underline-offset: 4px;
-
-  /* border-bottom: 1px solid var(--Border-Color); */
-
   border-bottom: 1px solid var(--Text-Color);
   &:hover {
     color: #f472b6;
@@ -367,7 +486,6 @@ const TOCDivider = styled.hr`
   margin-top: 1rem;
   border: none;
   border-top: 1px solid #e5e7eb;
-
   border-top-color: #374151;
 `;
 
@@ -379,7 +497,6 @@ const DetailPageLayout = styled.div`
   margin-right: auto;
   width: 100%;
   max-width: 750px;
-
   padding-left: 1.25rem;
   padding-right: 1.25rem;
 
@@ -431,9 +548,6 @@ const MetaContainer = styled.div`
   font-size: 0.875rem;
   line-height: 1.25rem;
   color: #6b7280;
-
-  /* 
-    color: #9ca3af; */
 `;
 
 const MetaItem = styled.div`
@@ -452,20 +566,9 @@ const CalendarIcon = styled.div`
   }
 `;
 
-const ClockIcon = styled.div`
-  width: 0.875rem;
-  height: 0.875rem;
-
-  svg {
-    width: 100%;
-    height: 100%;
-  }
-`;
-
 const Divider = styled.hr`
   margin-top: 1.25rem;
   border: none;
   border-top: 1px solid #e5e7eb;
-
   border-top-color: #374151;
 `;
