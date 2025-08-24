@@ -1,23 +1,43 @@
-import React, {useState} from "react";
+import remarkGfm from "remark-gfm";
+import rehypeSlug from "rehype-slug";
 import styled from "styled-components";
+import remarkBreaks from "remark-breaks";
+import {useBlogApis} from "@/common/apis";
+import {useParams} from "react-router-dom";
+import ReactMarkdown from "react-markdown";
+import {formatTimestamp} from "@/common/util";
+import React, {useState, useEffect} from "react";
+import {CalendarSVG, LinkCopySVG, ReplySVG, ScrollTopSVG} from "@public/Icon";
 
 export const DetailPage = () => {
+  const {detailId} = useParams();
+  const {fetchDetailPost} = useBlogApis();
+  const [detailPost, setDetailPost] = useState("");
+  const [tocItems, setTocItems] = useState([]);
+  // toc 활성화 상태
   const [activeId, setActiveId] = useState("");
 
-  const tocItems = [
-    {title: "페이팔 계정 생성", href: "#페이팔-계정-생성", isSubItem: false, id: "페이팔-계정-생성"},
-    {title: "Front-end 구현", href: "#front-end-구현", isSubItem: false, id: "front-end-구현"},
-    {title: "Back-end 구현", href: "#back-end-구현", isSubItem: false, id: "back-end-구현"},
-    {title: "Production 배포", href: "#production-배포", isSubItem: false, id: "production-배포"},
-    {
-      title: "라이브 환경 credential 발급",
-      href: "#라이브-환경-credential-발급",
-      isSubItem: true,
-      id: "라이브-환경-credential-발급",
-    },
-    {title: "Reference", href: "#reference", isSubItem: false, id: "reference"},
-  ];
+  // 사이드바 링크 클릭 시 해당 섹션으로 스크롤
+  const handleTocClick = (e, href) => {
+    e.preventDefault();
+    const targetId = href.substring(1);
+    const targetElement = document.getElementById(targetId);
 
+    if (targetElement) {
+      const headerOffset = 100;
+      const elementPosition = targetElement.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: "smooth",
+      });
+
+      setActiveId(targetId);
+    }
+  };
+
+  // 스크롤
   const scrollToTop = () => {
     window.scrollTo({top: 0, behavior: "smooth"});
   };
@@ -35,163 +55,300 @@ export const DetailPage = () => {
     }
   };
 
+  // h1~h4 태그를 추출해서 toc를 만드는 함수
+  const tocFromMarkdown = (markdownContent) => {
+    if (!markdownContent) return [];
+
+    const headingRegex = /^(#{1,4})\s+(.+)$/gm;
+    const headings = [];
+    let match;
+
+    while ((match = headingRegex.exec(markdownContent)) !== null) {
+      const level = match[1].length;
+      const title = match[2].trim();
+
+      const href = `#${title
+        .toLowerCase()
+        .replace(/\s+/g, "-")
+        .replace(/[^\w\u3131-\uD79D-]/g, "")
+        .replace(/--+/g, "-")
+        .replace(/^-|-$/g, "")}`;
+
+      headings.push({
+        title,
+        href,
+        isSubItem: level > 1,
+        id: href.substring(1),
+        level,
+      });
+    }
+
+    return headings;
+  };
+  // 상세 포트트 가져오기 API
+  const getDetailPost = async (detailId) => {
+    try {
+      const response = await fetchDetailPost(detailId);
+      setDetailPost(response);
+      // toc
+      const contentToc = tocFromMarkdown(response.content);
+      setTocItems(contentToc);
+    } catch (error) {
+      console.error("포스트 가져오기 오류:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (detailId) {
+      getDetailPost(detailId);
+    }
+  }, [detailId]);
+
+  // 현재 스크롤 위치를 감지해 toc의 활성화 상태관리
+  useEffect(() => {
+    const handleScroll = () => {
+      if (tocItems.length === 0) return;
+
+      const scrollPosition = window.scrollY + 150; // 헤더 오프셋
+
+      let currentActiveId = "";
+
+      for (let i = 0; i < tocItems.length; i++) {
+        const element = document.getElementById(tocItems[i].id);
+        if (element) {
+          const elementTop = element.offsetTop;
+
+          if (scrollPosition >= elementTop) {
+            currentActiveId = tocItems[i].id;
+          } else {
+            break;
+          }
+        }
+      }
+
+      if (scrollPosition < 150) {
+        currentActiveId = "";
+      }
+
+      setActiveId(currentActiveId);
+    };
+
+    let timeoutId;
+    const throttledHandleScroll = () => {
+      if (timeoutId) return;
+      timeoutId = setTimeout(() => {
+        handleScroll();
+        timeoutId = null;
+      }, 100);
+    };
+
+    if (tocItems.length > 0) {
+      window.addEventListener("scroll", throttledHandleScroll);
+      handleScroll();
+    }
+
+    return () => {
+      window.removeEventListener("scroll", throttledHandleScroll);
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [tocItems]);
+
   return (
     <DetailPageLayout>
       {/* 헤더 */}
-      <HeaderContainer>
-        <Title>Next.js 플랫폼에 Paypal 결제 연동하기</Title>
+      <HeaderSection>
+        <Title>{detailPost.title}</Title>
 
-        <CategoryContainer>
-          <CategoryLink href="/blog/manual">Manual</CategoryLink>
-        </CategoryContainer>
+        <CategoryBox>
+          {/* TODO 클릭시 해당 카테고리의 포스트 목록으로 이동 하게 구현*/}
+          <CategoryText>{detailPost.category}</CategoryText>
+        </CategoryBox>
 
-        <MetaContainer>
-          <MetaItem>
+        <PostTimeSection>
+          <PostTimeBox>
             <CalendarIcon>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M8 2v4"></path>
-                <path d="M16 2v4"></path>
-                <rect width="18" height="18" x="3" y="4" rx="2"></rect>
-                <path d="M3 10h18"></path>
-                <path d="M8 14h.01"></path>
-                <path d="M12 14h.01"></path>
-                <path d="M16 14h.01"></path>
-                <path d="M8 18h.01"></path>
-                <path d="M12 18h.01"></path>
-                <path d="M16 18h.01"></path>
-              </svg>
+              <CalendarSVG />
             </CalendarIcon>
-            <span>2024년 06월 29일</span>
-          </MetaItem>
+            <div>{formatTimestamp(detailPost.createdAt)}</div>
+          </PostTimeBox>
+        </PostTimeSection>
 
-          <MetaItem>
-            <ClockIcon>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <circle cx="12" cy="12" r="10"></circle>
-                <polyline points="12 6 12 12 16.5 12"></polyline>
-              </svg>
-            </ClockIcon>
-            <span>8분</span>
-          </MetaItem>
-        </MetaContainer>
-
-        <Divider />
-      </HeaderContainer>
+        <HeaderHr />
+      </HeaderSection>
 
       {/* 반응형일때 보여지는 네브 */}
-      <TOCNavigation>
-        <TOCTitle id="table-of-contents-top">On this page</TOCTitle>
-        <TOCList>
+      <MobileNavSection>
+        <MobileNavTitle>On this page</MobileNavTitle>
+        <MobileNavList>
           {tocItems.map((item, index) => (
-            <TOCItem key={index} $isSubItem={item.isSubItem}>
-              <TOCLink href={item.href}>{item.title}</TOCLink>
-            </TOCItem>
+            <MobileNavItem key={index} $isSubItem={item.isSubItem}>
+              <MobileNavLink href={item.href} onClick={(e) => handleTocClick(e, item.href)}>
+                {item.title}
+              </MobileNavLink>
+            </MobileNavItem>
           ))}
-        </TOCList>
-        <TOCDivider />
-      </TOCNavigation>
+        </MobileNavList>
+        <MobileNavHr />
+      </MobileNavSection>
 
-      {/* 🔥 데스크톱용 사이드바 목차 추가 */}
-      <article>
-        <SidebarContainer>
-          <StickyWrapper>
-            <SidebarTOCContainer>
-              <SidebarTOCTitle>On this page</SidebarTOCTitle>
-              <SidebarTOCList>
+      <DetailBodySection>
+        <SidebarLayout>
+          <SidebarSection>
+            <SidebarContainer>
+              <SidebarTitle>On this page</SidebarTitle>
+              <SidebarList>
                 {tocItems.map((item, index) => (
-                  <SidebarTOCItem key={index} $isSubItem={item.isSubItem}>
-                    <SidebarTOCLink href={item.href} $isActive={activeId === item.id}>
+                  <SidebarItem key={index} $isSubItem={item.isSubItem}>
+                    <SidebarLink
+                      href={item.href}
+                      $isActive={activeId === item.id}
+                      onClick={(e) => handleTocClick(e, item.href)}
+                    >
                       {item.title}
-                    </SidebarTOCLink>
-                  </SidebarTOCItem>
+                    </SidebarLink>
+                  </SidebarItem>
                 ))}
-              </SidebarTOCList>
-            </SidebarTOCContainer>
+              </SidebarList>
+            </SidebarContainer>
 
             <ActionButtonsContainer>
               <ActionButton onClick={scrollToTop} title="맨 위로">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M5 3h14"></path>
-                  <path d="m18 13-6-6-6 6"></path>
-                  <path d="M12 7v14"></path>
-                </svg>
+                <ScrollTopSVG />
               </ActionButton>
 
               <ActionButton onClick={handleComment} title="댓글">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                  <path d="M13 8H7"></path>
-                  <path d="M17 12H7"></path>
-                </svg>
+                <ReplySVG />
               </ActionButton>
 
               <ActionButton onClick={handleCopy} title="링크 복사">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
-                  <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
-                </svg>
+                <LinkCopySVG />
               </ActionButton>
             </ActionButtonsContainer>
-          </StickyWrapper>
-        </SidebarContainer>
-        <h2>페이팔 계정 생성</h2>
-      </article>
+          </SidebarSection>
+        </SidebarLayout>
+
+        <ContentSection>
+          <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} rehypePlugins={[rehypeSlug]}>
+            {detailPost.content}
+          </ReactMarkdown>
+        </ContentSection>
+      </DetailBodySection>
     </DetailPageLayout>
   );
 };
 
-// 🔥 새로 추가된 사이드바 스타일드 컴포넌트들
-const SidebarContainer = styled.aside`
+const ContentSection = styled.div`
+  h1 {
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    line-height: 1.2;
+    color: var(--Text-Color);
+  }
+
+  h2 {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+    line-height: 1.3;
+    color: var(--Text-Color);
+  }
+
+  h3 {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-top: 1.25rem;
+    margin-bottom: 0.5rem;
+    color: var(--Text-Color);
+  }
+
+  p {
+    font: var(--Headline-R);
+    margin-bottom: 1rem;
+    color: var(--Text-Color);
+    white-space: pre-line;
+  }
+
+  strong {
+    font-weight: bold;
+    color: var(--Text-Color);
+  }
+
+  em {
+    font-style: italic;
+    color: var(--Text-Color);
+  }
+
+  img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 1.5rem auto;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  }
+
+  code {
+    background: #f1f5f9;
+    padding: 3px 6px;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-family: Monaco, Consolas, monospace;
+    color: var(--Back-Color);
+  }
+
+  pre {
+    background: #f8fafc;
+    padding: 16px;
+    border-radius: 8px;
+    overflow: auto;
+    margin: 1.5rem 0;
+    border: 1px solid #e2e8f0;
+
+    code {
+      background: none;
+      padding: 0;
+      font-family: Monaco, Consolas, monospace;
+      font-size: 0.875rem;
+    }
+  }
+
+  ul {
+    margin-left: 1.5rem;
+    margin-bottom: 1rem;
+    list-style-type: disc;
+  }
+
+  li {
+    margin-bottom: 0.5rem;
+    line-height: 1.6;
+  }
+
+  a {
+    color: #3b82f6;
+    text-decoration: underline;
+
+    &:hover {
+      color: #2563eb;
+    }
+  }
+
+  blockquote {
+    border-left: 4px solid #3b82f6;
+    padding-left: 1rem;
+    margin: 1rem 0;
+    color: #6b7280;
+    background-color: #f8fafc;
+    padding: 1rem;
+    border-radius: 0.25rem;
+  }
+`;
+const DetailBodySection = styled.article``;
+const SidebarLayout = styled.aside`
   position: absolute;
   top: -200px;
   left: 100%;
@@ -204,7 +361,7 @@ const SidebarContainer = styled.aside`
   }
 `;
 
-const StickyWrapper = styled.div`
+const SidebarSection = styled.div`
   position: sticky;
   bottom: 0;
   top: 200px;
@@ -214,7 +371,7 @@ const StickyWrapper = styled.div`
   width: 200px;
 `;
 
-const SidebarTOCContainer = styled.div`
+const SidebarContainer = styled.div`
   margin-bottom: 1rem;
   border-left: 1px solid #e5e7eb;
   padding-left: 1rem;
@@ -225,7 +382,7 @@ const SidebarTOCContainer = styled.div`
   border-left-color: #374151;
 `;
 
-const SidebarTOCTitle = styled.div`
+const SidebarTitle = styled.div`
   margin-bottom: 0.25rem;
   font-weight: 700;
   color: #374151;
@@ -233,7 +390,7 @@ const SidebarTOCTitle = styled.div`
   color: var(--Text-Color);
 `;
 
-const SidebarTOCList = styled.ul`
+const SidebarList = styled.ul`
   font-size: 0.75rem;
   line-height: 1rem;
   list-style: none;
@@ -241,14 +398,14 @@ const SidebarTOCList = styled.ul`
   padding: 0;
 `;
 
-const SidebarTOCItem = styled.li`
+const SidebarItem = styled.li`
   padding-top: 0.25rem;
   padding-bottom: 0.25rem;
   transition: all 0.2s ease;
   margin-left: ${(props) => (props.$isSubItem ? "1rem" : "0")};
 `;
 
-const SidebarTOCLink = styled.a`
+const SidebarLink = styled.a`
   color: ${(props) => (props.$isActive ? "#db2777" : "#6b7280")};
   text-decoration: none;
   transition: color 0.2s ease;
@@ -314,23 +471,21 @@ const ActionButton = styled.button`
   }
 `;
 
-// 기존 스타일드 컴포넌트들...
-const TOCNavigation = styled.nav`
+const MobileNavSection = styled.nav`
   @media (min-width: 1280px) {
     display: none;
   }
 `;
 
-const TOCTitle = styled.h2`
+const MobileNavTitle = styled.h2`
   font-size: 1rem;
   font-weight: 600;
   margin-bottom: 0.75rem;
-
   color: var(--Text-Color);
   font: var(--Title);
 `;
 
-const TOCList = styled.ul`
+const MobileNavList = styled.ul`
   margin: 0;
   padding: 0;
   padding-left: 1.5rem;
@@ -342,7 +497,7 @@ const TOCList = styled.ul`
   }
 `;
 
-const TOCItem = styled.li`
+const MobileNavItem = styled.li`
   margin-top: 0;
   margin-bottom: 0;
   padding-top: 0.25rem;
@@ -350,51 +505,21 @@ const TOCItem = styled.li`
   margin-left: ${(props) => (props.$isSubItem ? "1rem" : "0")};
 `;
 
-const TOCLink = styled.a`
+const MobileNavLink = styled.a`
   color: var(--Text-Color);
   text-decoration: none;
   text-underline-offset: 4px;
-
-  /* border-bottom: 1px solid var(--Border-Color); */
-
   border-bottom: 1px solid var(--Text-Color);
   &:hover {
     color: #f472b6;
   }
 `;
 
-const TOCDivider = styled.hr`
+const MobileNavHr = styled.hr`
   margin-top: 1rem;
   border: none;
   border-top: 1px solid #e5e7eb;
-
   border-top-color: #374151;
-`;
-
-const DetailPageLayout = styled.div`
-  position: relative;
-  color: #374151;
-  max-width: none;
-  margin-left: auto;
-  margin-right: auto;
-  width: 100%;
-  max-width: 750px;
-
-  padding-left: 1.25rem;
-  padding-right: 1.25rem;
-
-  @media (min-width: 640px) {
-    padding-left: 1.5rem;
-    padding-right: 1.5rem;
-  }
-
-  font: var(--Large-Title);
-  color: var(--Text-Color);
-`;
-
-const HeaderContainer = styled.header`
-  margin-top: 7rem;
-  text-align: center;
 `;
 
 const Title = styled.h1`
@@ -405,13 +530,13 @@ const Title = styled.h1`
   font: var(--Large-Title);
 `;
 
-const CategoryContainer = styled.div`
+const CategoryBox = styled.div`
   margin-bottom: 0.75rem;
   font-size: 1rem;
   line-height: 1.5rem;
 `;
 
-const CategoryLink = styled.a`
+const CategoryText = styled.div`
   font-weight: 600;
   color: #db2777;
   text-decoration: none;
@@ -420,23 +545,18 @@ const CategoryLink = styled.a`
   &:hover {
     text-decoration: underline;
   }
-
-  color: #f472b6;
 `;
 
-const MetaContainer = styled.div`
+const PostTimeSection = styled.div`
   display: flex;
   justify-content: center;
   gap: 0.75rem;
   font-size: 0.875rem;
   line-height: 1.25rem;
   color: #6b7280;
-
-  /* 
-    color: #9ca3af; */
 `;
 
-const MetaItem = styled.div`
+const PostTimeBox = styled.div`
   display: flex;
   align-items: center;
   gap: 0.25rem;
@@ -452,20 +572,34 @@ const CalendarIcon = styled.div`
   }
 `;
 
-const ClockIcon = styled.div`
-  width: 0.875rem;
-  height: 0.875rem;
-
-  svg {
-    width: 100%;
-    height: 100%;
-  }
-`;
-
-const Divider = styled.hr`
+const HeaderHr = styled.hr`
   margin-top: 1.25rem;
   border: none;
   border-top: 1px solid #e5e7eb;
-
   border-top-color: #374151;
+`;
+
+const HeaderSection = styled.header`
+  margin-top: 7rem;
+  text-align: center;
+`;
+
+const DetailPageLayout = styled.div`
+  position: relative;
+  color: #374151;
+  max-width: none;
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+  max-width: 750px;
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
+
+  @media (min-width: 640px) {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+
+  font: var(--Large-Title);
+  color: var(--Text-Color);
 `;

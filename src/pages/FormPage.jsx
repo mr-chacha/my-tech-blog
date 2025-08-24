@@ -1,20 +1,33 @@
-import React, {useRef, useEffect, useState} from "react";
-import styled from "styled-components";
-import {EditorView, basicSetup} from "codemirror";
-import {EditorState} from "@codemirror/state";
-import {markdown} from "@codemirror/lang-markdown";
 import {marked} from "marked";
-import {db, storage} from "../server/firebase";
-import {collection, addDoc, serverTimestamp} from "firebase/firestore";
-import {ref, uploadBytes, getDownloadURL} from "firebase/storage";
+import styled from "styled-components";
+import {useBlogApis} from "@/common/apis";
+import {useNavigate} from "react-router-dom";
+import {EditorState} from "@codemirror/state";
+import {EditorView, basicSetup} from "codemirror";
+import {serverTimestamp} from "firebase/firestore";
+import {markdown} from "@codemirror/lang-markdown";
+import React, {useRef, useEffect, useState} from "react";
+import {useZustandStore} from "@/common/store";
 
 export const FormPage = () => {
+  const CATEGORY_LIST = [
+    {id: 0, value: "React"},
+    {id: 1, value: "TypeScript"},
+    {id: 3, value: "JavaScript"},
+    {id: 4, value: "Next"},
+    {id: 4, value: "CSS"},
+    {id: 99, value: "직접입력"},
+  ];
+
+  const nav = useNavigate();
+  const {userInfo} = useZustandStore();
+  const {postImage, postPost} = useBlogApis();
   const [title, setTitle] = useState("");
   const [activeTab, setActiveTab] = useState([]);
   const [editorContent, setEditorContent] = useState("");
   const [category, setCategory] = useState("");
-  const [tempFiles, setTempFiles] = useState([]); // base64 임시 파일들
-  const [uploadedFiles, setUploadedFiles] = useState([]); // 최종 업로드된 파일들
+  const [categoryInput, setCategoryInput] = useState("");
+  const [tempFiles, setTempFiles] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
 
@@ -25,191 +38,18 @@ export const FormPage = () => {
   const fileInputRef = useRef(null);
   const dropAreaRef = useRef(null);
 
-  // 파일을 base64로 변환하는 함수
-  const fileToBase64 = (file) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-  };
-
-  // 이미지 추가 함수 (base64로 변환)
-  const handleFileUpload = async (files) => {
-    const imageFiles = Array.from(files).filter((file) => file.type.startsWith("image/"));
-
-    if (imageFiles.length === 0) {
-      alert("이미지 파일만 업로드 가능합니다.");
-      return;
+  useEffect(() => {
+    if (!userInfo) {
+      nav("/");
     }
-
-    try {
-      setIsLoading(true);
-
-      for (const file of imageFiles) {
-        // 파일을 base64로 변환
-        const base64Url = await fileToBase64(file);
-
-        // 임시 ID 생성 (파일명 기반)
-        const timestamp = Date.now();
-        const tempId = `temp_${timestamp}_${file.name.replace(/\s+/g, "_")}`;
-
-        // 임시 파일 정보 저장
-        const tempFileInfo = {
-          id: tempId,
-          name: file.name,
-          tempName: tempId, // 에디터에서 사용할 임시 이름
-          file: file, // 원본 파일 객체 (나중에 업로드용)
-          base64Url: base64Url,
-          size: file.size,
-          type: file.type,
-          addedAt: new Date(),
-        };
-
-        setTempFiles((prev) => [...prev, tempFileInfo]);
-
-        // 마크다운 에디터에 파일명으로 삽입 (base64 URL 대신)
-        insertText("![", `](${tempId})`, file.name.split(".")[0]);
-      }
-
-      console.log("이미지를 임시로 추가했습니다. 포스트 저장 시 Firebase에 업로드됩니다.");
-    } catch (error) {
-      console.error("이미지 처리 실패:", error);
-      alert("이미지 처리에 실패했습니다.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // 임시 파일명을 실제 URL로 변환하는 함수 (미리보기용)
-  const convertTempImagesToPreview = (markdownContent) => {
-    let convertedContent = markdownContent;
-
-    tempFiles.forEach((tempFile) => {
-      // 임시 파일명을 base64 URL로 교체 (미리보기용)
-      const tempImageRegex = new RegExp(`!\\[([^\\]]*)\\]\\(${tempFile.tempName}\\)`, "g");
-      convertedContent = convertedContent.replace(tempImageRegex, `![$1](${tempFile.base64Url})`);
-    });
-
-    return convertedContent;
-  };
-
-  // base64를 Firebase Storage에 업로드하고 URL 교체하는 함수
-  const uploadBase64ImagesToStorage = async () => {
-    if (tempFiles.length === 0) return {content: editorContent, files: []};
-
-    let updatedContent = editorContent;
-    const uploadedFileInfos = [];
-
-    for (const tempFile of tempFiles) {
-      try {
-        // 안전한 파일명 생성
-        const timestamp = Date.now();
-        const randomId = Math.random().toString(36).substring(2, 15);
-        const fileExtension = tempFile.name.split(".").pop();
-        const fileName = `images/${timestamp}_${randomId}.${fileExtension}`;
-
-        const storageRef = ref(storage, fileName);
-
-        // 원본 파일을 Firebase Storage에 업로드
-        const snapshot = await uploadBytes(storageRef, tempFile.file);
-        const downloadURL = await getDownloadURL(snapshot.ref);
-
-        // 에디터 내용에서 임시 파일명을 Storage URL로 교체
-        const tempImageRegex = new RegExp(`!\\[([^\\]]*)\\]\\(${tempFile.tempName}\\)`, "g");
-        updatedContent = updatedContent.replace(tempImageRegex, `![$1](${downloadURL})`);
-
-        // 업로드된 파일 정보 저장
-        const fileInfo = {
-          name: tempFile.name,
-          url: downloadURL,
-          path: fileName,
-          size: tempFile.size,
-          type: tempFile.type,
-          uploadedAt: new Date(),
-        };
-
-        uploadedFileInfos.push(fileInfo);
-
-        console.log(`✅ ${tempFile.name} 업로드 완료: ${downloadURL}`);
-      } catch (error) {
-        console.error(`❌ ${tempFile.name} 업로드 실패:`, error);
-        throw error;
-      }
-    }
-
-    setUploadedFiles(uploadedFileInfos);
-
-    // 업데이트된 내용과 파일 정보를 모두 반환
-    return {content: updatedContent, files: uploadedFileInfos};
-  };
-
-  // 포스트 저장 함수 (이미지 업로드 포함)
-  const handleSavePost = async () => {
-    // 필수 필드 검증
-    if (!title.trim()) {
-      alert("제목을 입력해주세요.");
-      return;
-    }
-
-    if (!editorContent.trim()) {
-      alert("내용을 입력해주세요.");
-      return;
-    }
-
-    if (!category.trim()) {
-      alert("카테고리를 선택해주세요.");
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-
-      // base64 이미지들을 Firebase Storage에 업로드하고 URL 교체
-      const {content: finalContent, files: uploadedFileInfos} = await uploadBase64ImagesToStorage();
-
-      // 대표 이미지 설정 (첫 번째 업로드된 이미지)
-      const representativeImage = uploadedFileInfos.length > 0 ? uploadedFileInfos[0].url : null;
-
-      const postData = {
-        title: title.trim(),
-        content: finalContent,
-        category: category.trim(),
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        viewCount: 0,
-        likeCount: 0,
-        commentCount: 0,
-        image: representativeImage,
-        isRecommended: false,
-        file: uploadedFileInfos,
-        tags: activeTab,
-        published: true,
-        author: "차차",
-      };
-
-      // Firestore에 문서 추가
-      const docRef = await addDoc(collection(db, "posts"), postData);
-
-      console.log("포스트 저장 성공!");
-
-      // 폼 초기화
-      resetForm();
-    } catch (error) {
-      console.error("포스트 저장 실패:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  }, [userInfo]);
 
   // 폼 초기화 함수
   const resetForm = () => {
     setTitle("");
     setCategory("");
     setActiveTab([]);
-    setTempFiles([]); // 임시 파일들 초기화
-    setUploadedFiles([]);
+    setTempFiles([]);
     setEditorContent("");
     if (editorViewRef.current) {
       editorViewRef.current.dispatch({
@@ -220,28 +60,6 @@ export const FormPage = () => {
         },
       });
     }
-  };
-
-  // 임시 파일 삭제 함수
-  const removeTempFile = (indexToRemove) => {
-    const fileToRemove = tempFiles[indexToRemove];
-
-    // 에디터에서 해당 이미지 임시명 제거
-    if (editorViewRef.current && fileToRemove) {
-      const currentContent = editorViewRef.current.state.doc.toString();
-      const tempImageRegex = new RegExp(`!\\[([^\\]]*)\\]\\(${fileToRemove.tempName}\\)`, "g");
-      const updatedContent = currentContent.replace(tempImageRegex, "");
-
-      editorViewRef.current.dispatch({
-        changes: {
-          from: 0,
-          to: editorViewRef.current.state.doc.length,
-          insert: updatedContent,
-        },
-      });
-    }
-
-    setTempFiles((prev) => prev.filter((_, index) => index !== indexToRemove));
   };
 
   // 파일 입력 핸들러
@@ -289,20 +107,27 @@ export const FormPage = () => {
     fileInputRef.current?.click();
   };
 
-  // marked 설정
-  marked.setOptions({
-    breaks: true,
-  });
-
-  // 마크다운을 HTML로 변환 (임시 이미지 처리 포함)
+  // 마크다운을 HTML로 변환
   const convertMarkdownToHtml = (markdownText) => {
     try {
-      // 임시 이미지들을 실제 base64 URL로 변환한 후 HTML로 변환
+      // 이미지들을 base64 URL로 변환한 후 HTML로 변환
       const convertedContent = convertTempImagesToPreview(markdownText);
       return marked(convertedContent);
     } catch (error) {
       return markdownText;
     }
+  };
+  // 임시 파일명을 실제 URL로 변환하는 함수
+  const convertTempImagesToPreview = (markdownContent) => {
+    let convertedContent = markdownContent;
+
+    tempFiles.forEach((tempFile) => {
+      // 임시 파일명을 base64 URL로 교체 (미리보기용)
+      const tempImageRegex = new RegExp(`!\\[([^\\]]*)\\]\\(${tempFile.tempName}\\)`, "g");
+      convertedContent = convertedContent.replace(tempImageRegex, `![$1](${tempFile.base64Url})`);
+    });
+
+    return convertedContent;
   };
 
   // velog 스타일 마크다운 삽입 함수들
@@ -415,6 +240,157 @@ export const FormPage = () => {
     setActiveTab((prev) => prev.filter((_, index) => index !== indexToRemove));
   };
 
+  // 파일을 base64로 변환하는 함수
+  const fileToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // 이미지 추가 함수 base64로 변환
+  const handleFileUpload = async (files) => {
+    const imageFiles = Array.from(files).filter((file) => file.type.startsWith("image/"));
+
+    if (imageFiles.length === 0) {
+      alert("이미지 파일만 업로드 가능합니다.");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+
+      for (const file of imageFiles) {
+        // 파일을 base64로 변환
+        const base64Url = await fileToBase64(file);
+
+        const timestamp = Date.now();
+        const tempId = `temp_${timestamp}_${file.name.replace(/\s+/g, "_")}`;
+
+        // 임시 파일 정보 저장
+        const tempFileInfo = {
+          id: tempId,
+          name: file.name,
+          tempName: tempId,
+          file: file,
+          base64Url: base64Url,
+          size: file.size,
+          type: file.type,
+          addedAt: new Date(),
+        };
+
+        setTempFiles((prev) => [...prev, tempFileInfo]);
+        insertText("![", `](${tempId})`, file.name.split(".")[0]);
+      }
+    } catch (error) {
+      console.error("이미지 처리 실패:", error);
+      alert("이미지 처리에 실패했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 이미지 저장 API
+  const uploadImage = async () => {
+    // base64를 Firebase Storage에 업로드하고 URL 교체하는 함수
+
+    if (tempFiles.length === 0) return {content: editorContent, files: []};
+
+    let updatedContent = editorContent;
+    const uploadedFileInfos = [];
+
+    for (const tempFile of tempFiles) {
+      try {
+        // 안전한 파일명 생성
+        const timestamp = Date.now();
+        const randomId = Math.random().toString(36).substring(2, 15);
+        const fileExtension = tempFile.name.split(".").pop();
+        const fileName = `images/${timestamp}_${randomId}.${fileExtension}`;
+
+        const downloadURL = await postImage(fileName, tempFile);
+        const tempImageRegex = new RegExp(`!\\[([^\\]]*)\\]\\(${tempFile.tempName}\\)`, "g");
+        updatedContent = updatedContent.replace(tempImageRegex, `![$1](${downloadURL})`);
+
+        const fileInfo = {
+          name: tempFile.name,
+          url: downloadURL,
+          path: fileName,
+          size: tempFile.size,
+          type: tempFile.type,
+          uploadedAt: new Date(),
+        };
+
+        uploadedFileInfos.push(fileInfo);
+      } catch (error) {
+        console.error(`이미지 업로드 실패:`, error);
+        throw error;
+      }
+    }
+
+    return {content: updatedContent, files: uploadedFileInfos};
+  };
+
+  // 포스트 저장 API
+  const handleSavePost = async () => {
+    // 필수 필드 검증
+    if (!title.trim()) {
+      alert("제목을 입력해주세요.");
+      return;
+    }
+
+    if (!editorContent.trim()) {
+      alert("내용을 입력해주세요.");
+      return;
+    }
+
+    if (!category.trim()) {
+      alert("카테고리를 선택해주세요.");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+
+      // base64 이미지들을 Firebase Storage에 업로드하고 URL 교체
+      const {content: finalContent, files: uploadedFileInfos} = await uploadImage();
+
+      // 대표 이미지 설정 (첫 번째 업로드된 이미지)
+      const representativeImage = uploadedFileInfos.length > 0 ? uploadedFileInfos[0].url : null;
+
+      const postData = {
+        title: title.trim(),
+        content: finalContent,
+        category: category === "직접입력" ? categoryInput : category.trim(),
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        viewCount: 0,
+        likeCount: 0,
+        commentCount: 0,
+        image: representativeImage,
+        isRecommended: false,
+        file: uploadedFileInfos,
+        tags: activeTab,
+        published: true,
+        author: "차차",
+      };
+
+      // Firestore에 문서 추가 API
+      const response = await postPost("posts", postData);
+      if (response.id) {
+        nav(`/post/${response.id}`);
+      }
+
+      // 폼 초기화
+      resetForm();
+    } catch (error) {
+      console.error("포스트 저장 실패:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // 에디터 초기화
   useEffect(() => {
     if (editorRef.current) {
@@ -483,6 +459,11 @@ export const FormPage = () => {
     }
   }, []);
 
+  // marked 설정
+  marked.setOptions({
+    breaks: true,
+  });
+
   return (
     <FormLayout>
       <FormContainer
@@ -517,15 +498,22 @@ export const FormPage = () => {
               <CategoryBox>
                 <select value={category} onChange={(e) => setCategory(e.target.value)} className="category-select">
                   <option value="">카테고리를 선택하세요</option>
-                  <option value="React">React</option>
-                  <option value="JavaScript">JavaScript</option>
-                  <option value="Node.js">Node.js</option>
-                  <option value="CSS">CSS</option>
-                  <option value="Python">Python</option>
-                  <option value="TypeScript">TypeScript</option>
-                  <option value="기타">기타</option>
+                  {CATEGORY_LIST.map((item, index) => (
+                    <option key={`category_${index}`} value={item.value}>
+                      {item.value}
+                    </option>
+                  ))}
                 </select>
               </CategoryBox>
+
+              {/* 카테고리 직접입력 */}
+              {category === "직접입력" && (
+                <CategoryInput
+                  onChange={(e) => setCategoryInput(e.target.value)}
+                  type="text"
+                  placeholder="카테고리를 입력하세요"
+                />
+              )}
 
               {/* 태그 입력 */}
               <ActviveTagBox>
@@ -555,54 +543,54 @@ export const FormPage = () => {
                 style={{display: "none"}}
               />
 
-              <VelogToolbar>
+              <FormToolbar>
                 <ToolGroup>
-                  <VelogToolButton onClick={() => insertHeading(1)}>H1</VelogToolButton>
-                  <VelogToolButton onClick={() => insertHeading(2)} title="제목 2">
+                  <FormToolButton onClick={() => insertHeading(1)}>H1</FormToolButton>
+                  <FormToolButton onClick={() => insertHeading(2)} title="제목 2">
                     H2
-                  </VelogToolButton>
-                  <VelogToolButton onClick={() => insertHeading(3)} title="제목 3">
+                  </FormToolButton>
+                  <FormToolButton onClick={() => insertHeading(3)} title="제목 3">
                     H3
-                  </VelogToolButton>
-                  <VelogToolButton onClick={() => insertHeading(4)} title="제목 4">
+                  </FormToolButton>
+                  <FormToolButton onClick={() => insertHeading(4)} title="제목 4">
                     H4
-                  </VelogToolButton>
+                  </FormToolButton>
                 </ToolGroup>
                 <ToolDivider />
                 <ToolGroup>
-                  <VelogToolButton onClick={insertBold} title="굵게">
+                  <FormToolButton onClick={insertBold} title="굵게">
                     <strong>B</strong>
-                  </VelogToolButton>
-                  <VelogToolButton onClick={insertItalic} title="기울임">
+                  </FormToolButton>
+                  <FormToolButton onClick={insertItalic} title="기울임">
                     <em>I</em>
-                  </VelogToolButton>
-                  <VelogToolButton onClick={insertStrike} title="취소선">
+                  </FormToolButton>
+                  <FormToolButton onClick={insertStrike} title="취소선">
                     <del>S</del>
-                  </VelogToolButton>
+                  </FormToolButton>
                 </ToolGroup>
                 <ToolDivider />
                 <ToolGroup>
-                  <VelogToolButton onClick={insertCode} title="인라인 코드">
+                  <FormToolButton onClick={insertCode} title="인라인 코드">
                     &lt;/&gt;
-                  </VelogToolButton>
-                  <VelogToolButton onClick={insertCodeBlock} title="코드 블록">
+                  </FormToolButton>
+                  <FormToolButton onClick={insertCodeBlock} title="코드 블록">
                     {}
-                  </VelogToolButton>
-                  <VelogToolButton onClick={insertLink} title="링크">
+                  </FormToolButton>
+                  <FormToolButton onClick={insertLink} title="링크">
                     🔗
-                  </VelogToolButton>
-                  <VelogToolButton onClick={insertQuote} title="인용">
+                  </FormToolButton>
+                  <FormToolButton onClick={insertQuote} title="인용">
                     " "
-                  </VelogToolButton>
-                  <VelogToolButton onClick={insertList} title="리스트">
+                  </FormToolButton>
+                  <FormToolButton onClick={insertList} title="리스트">
                     • • •
-                  </VelogToolButton>
+                  </FormToolButton>
                 </ToolGroup>
                 <ToolDivider />
                 <ToolGroup>
-                  <VelogToolButton onClick={openFileDialog} title="이미지 업로드">
+                  <FormToolButton onClick={openFileDialog} title="이미지 업로드">
                     📁
-                  </VelogToolButton>
+                  </FormToolButton>
                 </ToolGroup>
 
                 <SaveButtonGroup>
@@ -613,9 +601,9 @@ export const FormPage = () => {
                     초기화
                   </ResetButton>
                 </SaveButtonGroup>
-              </VelogToolbar>
+              </FormToolbar>
 
-              <VelogEditorContainer ref={editorRef} />
+              <FormEditorContainer ref={editorRef} />
             </LeftBoxBottom>
           </LeftBox>
         </LeftSection>
@@ -623,7 +611,6 @@ export const FormPage = () => {
         <RightSection>
           <PreviewContainer>
             <div className="title-input">{title}</div>
-            {category && <CategoryPreview>카테고리: {category}</CategoryPreview>}
             <PreviewContent
               dangerouslySetInnerHTML={{
                 __html: convertMarkdownToHtml(editorContent),
@@ -635,25 +622,6 @@ export const FormPage = () => {
     </FormLayout>
   );
 };
-
-const HelperText = styled.div`
-  font-size: 0.75rem;
-  color: #6b7280;
-  margin-top: 0.5rem;
-  padding: 0.5rem;
-  background-color: #f0f9ff;
-  border-left: 3px solid #3b82f6;
-  border-radius: 0.25rem;
-`;
-
-const TempIndicator = styled.span`
-  background-color: #fbbf24;
-  color: white;
-  font-size: 0.625rem;
-  padding: 0.125rem 0.375rem;
-  border-radius: 0.25rem;
-  font-weight: 500;
-`;
 
 const DragOverlay = styled.div`
   position: fixed;
@@ -684,7 +652,20 @@ const DragText = styled.div`
   font-size: 1.5rem;
   font-weight: 600;
 `;
+const CategoryInput = styled.input`
+  margin-bottom: 0.75rem;
+  font: var(--Title-R);
+  font-size: 1.25rem;
+  line-height: 2rem;
+  min-width: 9rem;
+  border: none;
+  color: var(--Text-Colors);
+  outline: none;
 
+  &::placeholder {
+    color: #9ca3af;
+  }
+`;
 const CategoryBox = styled.div`
   margin-bottom: 1rem;
 
@@ -695,7 +676,8 @@ const CategoryBox = styled.div`
     border: 1px solid #e1e5e9;
     border-radius: 0.25rem;
     color: var(--Text-Colors);
-    background-color: white;
+    background-color: var(--Back-Color);
+    color: var(--Text-Color);
     min-width: 200px;
 
     &:focus {
@@ -759,71 +741,6 @@ const CategoryPreview = styled.div`
   background-color: #f3f4f6;
   border-radius: 0.25rem;
   display: inline-block;
-`;
-
-const FileList = styled.div`
-  margin-top: 2rem;
-  padding: 1rem;
-  background-color: #f8f9fa;
-  border-radius: 0.25rem;
-
-  h4 {
-    margin: 0 0 0.75rem 0;
-    font-size: 0.875rem;
-    color: #495057;
-    font-weight: 600;
-  }
-`;
-
-const FileItem = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.5rem;
-  margin-bottom: 0.5rem;
-  background-color: white;
-  border-radius: 0.25rem;
-  border: 1px solid #e5e7eb;
-  transition: all 0.2s;
-
-  &:hover {
-    border-color: #d1d5db;
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-  }
-`;
-
-const FileInfo = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-`;
-
-const FileIcon = styled.span`
-  font-size: 1rem;
-`;
-
-const FileName = styled.span`
-  font-size: 0.875rem;
-  color: #374151;
-  font-weight: 500;
-`;
-
-const FileSize = styled.span`
-  font-size: 0.75rem;
-  color: #6b7280;
-`;
-
-const RemoveFileButton = styled.button`
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0.25rem;
-  border-radius: 0.25rem;
-  transition: background-color 0.2s;
-
-  &:hover {
-    background-color: #fee2e2;
-  }
 `;
 
 const ActviveTag = styled.div`
@@ -891,7 +808,6 @@ const LeftBoxBottom = styled.div`
 
 const LeftBoxTop = styled.div`
   min-height: 0px;
-  padding-bottom: 2rem;
   display: flex;
   flex-direction: column;
 
@@ -953,7 +869,7 @@ const FormLayout = styled.div`
   margin: 0 auto;
 `;
 
-const VelogToolbar = styled.div`
+const FormToolbar = styled.div`
   display: flex;
   align-items: center;
   padding: 1rem;
@@ -974,7 +890,7 @@ const ToolGroup = styled.div`
   gap: 0.25rem;
 `;
 
-const VelogToolButton = styled.button`
+const FormToolButton = styled.button`
   padding: 0.5rem 0.75rem;
   border: none;
   background: none;
@@ -1010,7 +926,7 @@ const ToolDivider = styled.div`
   }
 `;
 
-const VelogEditorContainer = styled.div`
+const FormEditorContainer = styled.div`
   flex: 1;
   border: none !important;
   overflow: hidden;

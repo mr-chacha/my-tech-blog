@@ -4,13 +4,18 @@ import {GitHubSVG, MoonSVG, SunSVG} from "@public/Icon";
 import React, {useState, useEffect} from "react";
 import {useNavigate} from "react-router-dom";
 import styled from "styled-components";
+import {signOut} from "firebase/auth";
+import {auth} from "@/server/firebase";
 
 export const Header = () => {
+  const {userInfo, setUserInfo, isDarkMode, setIsDarkMode} = useZustandStore();
+
   const [scrollProgress, setScrollProgress] = useState(0);
-  const {isDarkMode, setIsDarkMode} = useZustandStore();
+  const [headerMenu, setHeaderMenu] = useState("list");
   const navigate = useNavigate();
 
-  const navHandler = (path) => {
+  const navHandler = (path, value) => {
+    setHeaderMenu(value);
     if (path === "github") {
       window.open("https://github.com/mr-chacha", "_blank");
     } else {
@@ -23,6 +28,16 @@ export const Header = () => {
     setIsDarkMode(!isDarkMode);
   };
 
+  // 로그아웃 API
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth);
+      setUserInfo(null);
+      navigate("/");
+    } catch (error) {
+      console.error("로그아웃 오류:", error);
+    }
+  };
   // 상단 스크롤바 위치에 따른 프로그래스바
   useEffect(() => {
     let rafId;
@@ -56,12 +71,46 @@ export const Header = () => {
       <HeaderContent>
         {/* 네비게이션 링크 */}
         <NavLinksContainer>
-          <NavTitle $isDarkMode={isDarkMode} onClick={() => navHandler("/")}>
+          <NavTitle
+            className="header-title"
+            $isDarkMode={isDarkMode}
+            $isActive={headerMenu === "list"}
+            onClick={(e) => {
+              e.preventDefault();
+              navHandler("/", "list");
+            }}
+          >
             CHACHA
           </NavTitle>
-          <GlobalText font="var(--Body-M)" onClick={() => navHandler("/about")}>
+          <NavTitle
+            className="header-title"
+            font="var(--Body-M)"
+            $isActive={headerMenu === "about"}
+            onClick={(e) => {
+              e.preventDefault();
+              navHandler("/about", "about");
+            }}
+          >
             About
-          </GlobalText>
+          </NavTitle>
+          {userInfo && (
+            <NavTitle
+              className="header-title"
+              font="var(--Body-M)"
+              $isActive={headerMenu === "post"}
+              onClick={(e) => {
+                e.preventDefault();
+                navHandler("/form", "post");
+              }}
+            >
+              Post
+            </NavTitle>
+          )}
+          {userInfo && (
+            <GlobalText className="header-title" font="var(--Body-M)" onClick={handleSignOut}>
+              LogOut
+            </GlobalText>
+          )}
         </NavLinksContainer>
 
         {/* 액션 버튼들 */}
@@ -134,6 +183,10 @@ const NavLinksContainer = styled.div`
   display: flex;
   align-items: center;
   gap: 10px;
+
+  .header-title {
+    cursor: pointer;
+  }
 `;
 
 const NavTitle = styled.div`
@@ -145,8 +198,17 @@ const NavTitle = styled.div`
   justify-content: center;
   transition: all 0.2s ease;
   cursor: pointer;
-  background-color: ${(props) => (props.$isDarkMode ? "#1e293b" : "#f1f5f9")};
-  color: ${(props) => (props.$isDarkMode ? "#fff" : "#3b82f6")};
+
+  color: var(--Text-Color);
+
+  ${(props) =>
+    props.$isActive &&
+    `
+    background-color: #f1f5f9;
+    color: #3b82f6;
+
+    
+  `}
 `;
 
 const ActionsContainer = styled.div`
