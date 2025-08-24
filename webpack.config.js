@@ -1,4 +1,4 @@
-const DotenvWebpack = require("dotenv-webpack"); // 이 부분이 필요합니다!
+const DotenvWebpack = require("dotenv-webpack");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const path = require("path");
 
@@ -22,7 +22,7 @@ module.exports = {
         use: ["style-loader", "css-loader"],
       },
       {
-        test: /\.(png|jpe?g|gif|webp|svg)$/i, // 이미지 파일 처리
+        test: /\.(png|jpe?g|gif|webp|svg)$/i,
         type: "asset/resource",
       },
     ],
@@ -38,9 +38,11 @@ module.exports = {
     new HtmlWebpackPlugin({
       template: "./public/index.html",
     }),
+    // ✅ 항상 환경변수 로드 (프로덕션에서도!)
     new DotenvWebpack({
-      path: ".env.local",
+      path: ".env",
       systemvars: true,
+      safe: false, // .env 파일이 없어도 에러 안남
     }),
   ],
   devServer: {
@@ -48,7 +50,7 @@ module.exports = {
     port: 3000,
     open: true,
     hot: true,
-    historyApiFallback: true, // 모든 요청을 index.html로 리디렉션
+    historyApiFallback: true,
   },
-  mode: "development",
+  mode: "production",
 };
