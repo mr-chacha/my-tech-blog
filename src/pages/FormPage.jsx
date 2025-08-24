@@ -7,6 +7,7 @@ import {EditorView, basicSetup} from "codemirror";
 import {serverTimestamp} from "firebase/firestore";
 import {markdown} from "@codemirror/lang-markdown";
 import React, {useRef, useEffect, useState} from "react";
+import {useZustandStore} from "@/common/store";
 
 export const FormPage = () => {
   const CATEGORY_LIST = [
@@ -19,6 +20,7 @@ export const FormPage = () => {
   ];
 
   const nav = useNavigate();
+  const {userInfo} = useZustandStore();
   const {postImage, postPost} = useBlogApis();
   const [title, setTitle] = useState("");
   const [activeTab, setActiveTab] = useState([]);
@@ -35,6 +37,12 @@ export const FormPage = () => {
   const editorViewRef = useRef(null);
   const fileInputRef = useRef(null);
   const dropAreaRef = useRef(null);
+
+  useEffect(() => {
+    if (!userInfo) {
+      nav("/");
+    }
+  }, [userInfo]);
 
   // 폼 초기화 함수
   const resetForm = () => {
