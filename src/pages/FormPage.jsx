@@ -1,15 +1,25 @@
-import React, {useRef, useEffect, useState} from "react";
-import styled from "styled-components";
-import {EditorView, basicSetup} from "codemirror";
-import {EditorState} from "@codemirror/state";
-import {markdown} from "@codemirror/lang-markdown";
 import {marked} from "marked";
+import styled from "styled-components";
 import {useBlogApis} from "@/common/apis";
 import {useNavigate} from "react-router-dom";
+import {EditorState} from "@codemirror/state";
+import {EditorView, basicSetup} from "codemirror";
 import {serverTimestamp} from "firebase/firestore";
+import {markdown} from "@codemirror/lang-markdown";
+import React, {useRef, useEffect, useState} from "react";
+
 export const FormPage = () => {
-  const {postImage, postPost} = useBlogApis();
+  const CATEGORY_LIST = [
+    {id: 0, value: "React"},
+    {id: 1, value: "TypeScript"},
+    {id: 3, value: "JavaScript"},
+    {id: 4, value: "Next"},
+    {id: 4, value: "CSS"},
+    {id: 99, value: "직접입력"},
+  ];
+
   const nav = useNavigate();
+  const {postImage, postPost} = useBlogApis();
   const [title, setTitle] = useState("");
   const [activeTab, setActiveTab] = useState([]);
   const [editorContent, setEditorContent] = useState("");
@@ -18,6 +28,7 @@ export const FormPage = () => {
   const [tempFiles, setTempFiles] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
+
   const tagInputRef = useRef(null);
   const editorRef = useRef(null);
   const isProcessingRef = useRef(false);
@@ -247,7 +258,6 @@ export const FormPage = () => {
         // 파일을 base64로 변환
         const base64Url = await fileToBase64(file);
 
-        // 임시 ID 생성 (파일명 기반)
         const timestamp = Date.now();
         const tempId = `temp_${timestamp}_${file.name.replace(/\s+/g, "_")}`;
 
@@ -255,8 +265,8 @@ export const FormPage = () => {
         const tempFileInfo = {
           id: tempId,
           name: file.name,
-          tempName: tempId, // 에디터에서 사용할 임시 이름
-          file: file, // 원본 파일 객체 (나중에 업로드용)
+          tempName: tempId,
+          file: file,
           base64Url: base64Url,
           size: file.size,
           type: file.type,
@@ -264,8 +274,6 @@ export const FormPage = () => {
         };
 
         setTempFiles((prev) => [...prev, tempFileInfo]);
-
-        // 마크다운 에디터에 파일명으로 삽입 (base64 URL 대신)
         insertText("![", `](${tempId})`, file.name.split(".")[0]);
       }
     } catch (error) {
@@ -294,11 +302,9 @@ export const FormPage = () => {
         const fileName = `images/${timestamp}_${randomId}.${fileExtension}`;
 
         const downloadURL = await postImage(fileName, tempFile);
-        // 에디터 내용에서 임시 파일명을 Storage URL로 교체
         const tempImageRegex = new RegExp(`!\\[([^\\]]*)\\]\\(${tempFile.tempName}\\)`, "g");
         updatedContent = updatedContent.replace(tempImageRegex, `![$1](${downloadURL})`);
 
-        // 업로드된 파일 정보 저장
         const fileInfo = {
           name: tempFile.name,
           url: downloadURL,
@@ -310,12 +316,11 @@ export const FormPage = () => {
 
         uploadedFileInfos.push(fileInfo);
       } catch (error) {
-        console.error(`❌ ${tempFile.name} 업로드 실패:`, error);
+        console.error(`이미지 업로드 실패:`, error);
         throw error;
       }
     }
 
-    // 업데이트된 내용과 파일 정보를 모두 반환
     return {content: updatedContent, files: uploadedFileInfos};
   };
 
@@ -349,7 +354,7 @@ export const FormPage = () => {
       const postData = {
         title: title.trim(),
         content: finalContent,
-        category: category === "customCategory" ? categoryInput : category.trim(),
+        category: category === "직접입력" ? categoryInput : category.trim(),
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         viewCount: 0,
@@ -485,18 +490,16 @@ export const FormPage = () => {
               <CategoryBox>
                 <select value={category} onChange={(e) => setCategory(e.target.value)} className="category-select">
                   <option value="">카테고리를 선택하세요</option>
-                  <option value="React">React</option>
-                  <option value="TypeScript">TypeScript</option>
-                  <option value="JavaScript">JavaScript</option>
-                  <option value="Next">Next</option>
-                  <option value="CSS">CSS</option>
-
-                  <option value="customCategory">직접입력</option>
+                  {CATEGORY_LIST.map((item, index) => (
+                    <option key={`category_${index}`} value={item.value}>
+                      {item.value}
+                    </option>
+                  ))}
                 </select>
               </CategoryBox>
 
               {/* 카테고리 직접입력 */}
-              {category === "customCategory" && (
+              {category === "직접입력" && (
                 <CategoryInput
                   onChange={(e) => setCategoryInput(e.target.value)}
                   type="text"
@@ -532,54 +535,54 @@ export const FormPage = () => {
                 style={{display: "none"}}
               />
 
-              <VelogToolbar>
+              <FormToolbar>
                 <ToolGroup>
-                  <VelogToolButton onClick={() => insertHeading(1)}>H1</VelogToolButton>
-                  <VelogToolButton onClick={() => insertHeading(2)} title="제목 2">
+                  <FormToolButton onClick={() => insertHeading(1)}>H1</FormToolButton>
+                  <FormToolButton onClick={() => insertHeading(2)} title="제목 2">
                     H2
-                  </VelogToolButton>
-                  <VelogToolButton onClick={() => insertHeading(3)} title="제목 3">
+                  </FormToolButton>
+                  <FormToolButton onClick={() => insertHeading(3)} title="제목 3">
                     H3
-                  </VelogToolButton>
-                  <VelogToolButton onClick={() => insertHeading(4)} title="제목 4">
+                  </FormToolButton>
+                  <FormToolButton onClick={() => insertHeading(4)} title="제목 4">
                     H4
-                  </VelogToolButton>
+                  </FormToolButton>
                 </ToolGroup>
                 <ToolDivider />
                 <ToolGroup>
-                  <VelogToolButton onClick={insertBold} title="굵게">
+                  <FormToolButton onClick={insertBold} title="굵게">
                     <strong>B</strong>
-                  </VelogToolButton>
-                  <VelogToolButton onClick={insertItalic} title="기울임">
+                  </FormToolButton>
+                  <FormToolButton onClick={insertItalic} title="기울임">
                     <em>I</em>
-                  </VelogToolButton>
-                  <VelogToolButton onClick={insertStrike} title="취소선">
+                  </FormToolButton>
+                  <FormToolButton onClick={insertStrike} title="취소선">
                     <del>S</del>
-                  </VelogToolButton>
+                  </FormToolButton>
                 </ToolGroup>
                 <ToolDivider />
                 <ToolGroup>
-                  <VelogToolButton onClick={insertCode} title="인라인 코드">
+                  <FormToolButton onClick={insertCode} title="인라인 코드">
                     &lt;/&gt;
-                  </VelogToolButton>
-                  <VelogToolButton onClick={insertCodeBlock} title="코드 블록">
+                  </FormToolButton>
+                  <FormToolButton onClick={insertCodeBlock} title="코드 블록">
                     {}
-                  </VelogToolButton>
-                  <VelogToolButton onClick={insertLink} title="링크">
+                  </FormToolButton>
+                  <FormToolButton onClick={insertLink} title="링크">
                     🔗
-                  </VelogToolButton>
-                  <VelogToolButton onClick={insertQuote} title="인용">
+                  </FormToolButton>
+                  <FormToolButton onClick={insertQuote} title="인용">
                     " "
-                  </VelogToolButton>
-                  <VelogToolButton onClick={insertList} title="리스트">
+                  </FormToolButton>
+                  <FormToolButton onClick={insertList} title="리스트">
                     • • •
-                  </VelogToolButton>
+                  </FormToolButton>
                 </ToolGroup>
                 <ToolDivider />
                 <ToolGroup>
-                  <VelogToolButton onClick={openFileDialog} title="이미지 업로드">
+                  <FormToolButton onClick={openFileDialog} title="이미지 업로드">
                     📁
-                  </VelogToolButton>
+                  </FormToolButton>
                 </ToolGroup>
 
                 <SaveButtonGroup>
@@ -590,9 +593,9 @@ export const FormPage = () => {
                     초기화
                   </ResetButton>
                 </SaveButtonGroup>
-              </VelogToolbar>
+              </FormToolbar>
 
-              <VelogEditorContainer ref={editorRef} />
+              <FormEditorContainer ref={editorRef} />
             </LeftBoxBottom>
           </LeftBox>
         </LeftSection>
@@ -600,7 +603,6 @@ export const FormPage = () => {
         <RightSection>
           <PreviewContainer>
             <div className="title-input">{title}</div>
-            {category && <CategoryPreview>카테고리: {category}</CategoryPreview>}
             <PreviewContent
               dangerouslySetInnerHTML={{
                 __html: convertMarkdownToHtml(editorContent),
@@ -612,25 +614,6 @@ export const FormPage = () => {
     </FormLayout>
   );
 };
-
-const HelperText = styled.div`
-  font-size: 0.75rem;
-  color: #6b7280;
-  margin-top: 0.5rem;
-  padding: 0.5rem;
-  background-color: #f0f9ff;
-  border-left: 3px solid #3b82f6;
-  border-radius: 0.25rem;
-`;
-
-const TempIndicator = styled.span`
-  background-color: #fbbf24;
-  color: white;
-  font-size: 0.625rem;
-  padding: 0.125rem 0.375rem;
-  border-radius: 0.25rem;
-  font-weight: 500;
-`;
 
 const DragOverlay = styled.div`
   position: fixed;
@@ -878,7 +861,7 @@ const FormLayout = styled.div`
   margin: 0 auto;
 `;
 
-const VelogToolbar = styled.div`
+const FormToolbar = styled.div`
   display: flex;
   align-items: center;
   padding: 1rem;
@@ -899,7 +882,7 @@ const ToolGroup = styled.div`
   gap: 0.25rem;
 `;
 
-const VelogToolButton = styled.button`
+const FormToolButton = styled.button`
   padding: 0.5rem 0.75rem;
   border: none;
   background: none;
@@ -935,7 +918,7 @@ const ToolDivider = styled.div`
   }
 `;
 
-const VelogEditorContainer = styled.div`
+const FormEditorContainer = styled.div`
   flex: 1;
   border: none !important;
   overflow: hidden;
