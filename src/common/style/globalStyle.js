@@ -44,7 +44,7 @@ export const GlobalStyles = createGlobalStyle`
     --Text-Color:${(props) => (props.isDarkMode ? "var(--Light)" : "var(--Dark)")};
     --Border-Color :${(props) => (props.isDarkMode ? "rgb(51 65 85)" : "rgb(209 213 219)")};
     --Brand-Colors:#3b82f6;
-    --Brand-Colors-Two:#f1f5f9;
+    --Brand-Colors-Two:#6b7280;
 
 
     // Typography

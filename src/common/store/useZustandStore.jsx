@@ -6,6 +6,9 @@ const useZustandStore = create((set, get) => ({
   userInfo: null,
   setUserInfo: (userInfo) => set({userInfo}),
 
+  isLoading: false,
+  setIsLoading: (isLoading) => set({isLoading}),
+
   // 모달 텍스트
   modalMessage: {
     topMessage: "",

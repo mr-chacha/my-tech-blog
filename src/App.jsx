@@ -7,6 +7,7 @@ import styled from "styled-components";
 import {useZustandStore} from "@/common/store";
 import {auth} from "@/server/firebase";
 import {onAuthStateChanged} from "firebase/auth";
+import {LoadingSpinner, NotFoundPage, OneButtonModal, TwoButtonModal} from "@/common/ui";
 
 function AppContent() {
   const {isDarkMode, userInfo, setUserInfo} = useZustandStore();
@@ -43,6 +44,7 @@ function AppContent() {
       ) : (
         // 다른 페이지들일 때
         <>
+          <LoadingSpinner />
           <Header />
           <Layout $layout={layout}>
             <Routes>
@@ -52,8 +54,14 @@ function AppContent() {
               <Route path="/post/:detailId" element={<DetailPage />} />
               {/* 로그인된 사용자가 /login에 접근하려 할 때 메인으로 리다이렉트 */}
               <Route path="/login" element={<Navigate to="/" replace />} />
+
+              {/* 404 페이지 - 가장 마지막에 위치 */}
+              <Route path="*" element={<NotFoundPage />} />
             </Routes>
+            <OneButtonModal />
+            <TwoButtonModal />
           </Layout>
+
           <Footer />
         </>
       )}
