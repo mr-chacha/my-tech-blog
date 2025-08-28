@@ -10,12 +10,11 @@ export const useBlogApis = () => {
     const result = await signInWithPopup(auth, provider);
     const adminEmail = process.env.REACT_APP_GITHUB_EMAIL;
     // 어드민 계정외에 로그인시 로그아웃
-    if (adminEmail !== result.email) {
+    if (adminEmail === result.user.email) {
+      return result;
+    } else {
       alert("관리자 계정이 아닙니다");
       await signOut(auth);
-      return;
-    } else {
-      return result;
     }
   };
   // 상세 포스트 조회
