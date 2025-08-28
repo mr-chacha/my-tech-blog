@@ -16,6 +16,7 @@ export const DetailPage = () => {
   const [tocItems, setTocItems] = useState([]);
   // toc 활성화 상태
   const [activeId, setActiveId] = useState("");
+  const [isScrollingToTarget, setIsScrollingToTarget] = useState(false); // 추가
 
   // 사이드바 링크 클릭 시 해당 섹션으로 스크롤
   const handleTocClick = (e, href) => {
@@ -24,7 +25,9 @@ export const DetailPage = () => {
     const targetElement = document.getElementById(targetId);
 
     if (targetElement) {
-      const headerOffset = 100;
+      setIsScrollingToTarget(true);
+
+      const headerOffset = 200;
       const elementPosition = targetElement.getBoundingClientRect().top;
       const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
 
@@ -33,8 +36,71 @@ export const DetailPage = () => {
         behavior: "smooth",
       });
 
-      setActiveId(targetId);
+      // 스크롤 완료 감지를 위한 함수
+      const checkScrollComplete = () => {
+        const currentScroll = window.scrollY;
+        const targetScroll = offsetPosition;
+        const tolerance = 5; // 오차 허용 범위
+
+        if (Math.abs(currentScroll - targetScroll) <= tolerance) {
+          // 스크롤 완료 시 해당 위치에서 정확한 활성화 상태 계산
+          const scrollPosition = currentScroll + 200;
+          let activeIds = [];
+
+          let currentActiveItem = null;
+
+          for (let i = 0; i < tocItems.length; i++) {
+            const element = document.getElementById(tocItems[i].id);
+            if (element) {
+              const elementTop = element.offsetTop;
+
+              if (elementTop <= scrollPosition) {
+                currentActiveItem = tocItems[i];
+              } else {
+                break;
+              }
+            }
+          }
+
+          if (currentActiveItem) {
+            activeIds = getCurrentAndParentH1(tocItems, currentActiveItem);
+          }
+
+          setActiveId(activeIds.join(","));
+          setIsScrollingToTarget(false);
+        } else {
+          requestAnimationFrame(checkScrollComplete);
+        }
+      };
+
+      setTimeout(() => {
+        checkScrollComplete();
+      }, 100);
     }
+  };
+
+  const getCurrentAndParentH1 = (items, currentItem) => {
+    const activeIds = [];
+    const currentIndex = items.findIndex((item) => item.id === currentItem.id);
+
+    if (currentIndex === -1) return [currentItem.id];
+
+    activeIds.push(currentItem.id);
+
+    if (currentItem.level !== 1) {
+      for (let i = currentIndex - 1; i >= 0; i--) {
+        const item = items[i];
+
+        if (item.level === 1) {
+          if (item.id !== currentItem.id) {
+            activeIds.unshift(item.id);
+          }
+          break;
+        }
+      }
+    }
+
+    return activeIds;
   };
 
   // 스크롤
@@ -56,41 +122,53 @@ export const DetailPage = () => {
   };
 
   // h1~h4 태그를 추출해서 toc를 만드는 함수
+
   const tocFromMarkdown = (markdownContent) => {
     if (!markdownContent) return [];
-
     const headingRegex = /^(#{1,4})\s+(.+)$/gm;
     const headings = [];
+    const titleCounts = {};
     let match;
 
     while ((match = headingRegex.exec(markdownContent)) !== null) {
       const level = match[1].length;
       const title = match[2].trim();
 
-      const href = `#${title
+      const baseId = title
         .toLowerCase()
         .replace(/\s+/g, "-")
         .replace(/[^\w\u3131-\uD79D-]/g, "")
         .replace(/--+/g, "-")
-        .replace(/^-|-$/g, "")}`;
+        .replace(/^-|-$/g, "");
+
+      let uniqueId = baseId;
+      if (titleCounts[baseId]) {
+        titleCounts[baseId]++;
+        uniqueId = `${baseId}-${titleCounts[baseId]}`;
+      } else {
+        titleCounts[baseId] = 1;
+      }
+
+      const href = `#${uniqueId}`;
 
       headings.push({
         title,
         href,
         isSubItem: level > 1,
-        id: href.substring(1),
+        id: uniqueId,
         level,
       });
     }
 
     return headings;
   };
+
   // 상세 포트트 가져오기 API
   const getDetailPost = async (detailId) => {
     try {
       const response = await fetchDetailPost(detailId);
       setDetailPost(response);
-      // toc
+
       const contentToc = tocFromMarkdown(response.content);
       setTocItems(contentToc);
     } catch (error) {
@@ -107,30 +185,36 @@ export const DetailPage = () => {
   // 현재 스크롤 위치를 감지해 toc의 활성화 상태관리
   useEffect(() => {
     const handleScroll = () => {
-      if (tocItems.length === 0) return;
+      // 클릭으로 스크롤 중이면 스크롤 감지 무시
+      if (isScrollingToTarget || tocItems.length === 0) return;
 
-      const scrollPosition = window.scrollY + 150; // 헤더 오프셋
+      const scrollPosition = window.scrollY + 200;
+      let activeIds = [];
 
-      let currentActiveId = "";
+      if (scrollPosition < 300) {
+        activeIds = [tocItems[0]?.id].filter(Boolean);
+      } else {
+        let currentActiveItem = null;
 
-      for (let i = 0; i < tocItems.length; i++) {
-        const element = document.getElementById(tocItems[i].id);
-        if (element) {
-          const elementTop = element.offsetTop;
+        for (let i = 0; i < tocItems.length; i++) {
+          const element = document.getElementById(tocItems[i].id);
+          if (element) {
+            const elementTop = element.offsetTop;
 
-          if (scrollPosition >= elementTop) {
-            currentActiveId = tocItems[i].id;
-          } else {
-            break;
+            if (elementTop <= scrollPosition) {
+              currentActiveItem = tocItems[i];
+            } else {
+              break;
+            }
           }
+        }
+
+        if (currentActiveItem) {
+          activeIds = getCurrentAndParentH1(tocItems, currentActiveItem);
         }
       }
 
-      if (scrollPosition < 150) {
-        currentActiveId = "";
-      }
-
-      setActiveId(currentActiveId);
+      setActiveId(activeIds.join(","));
     };
 
     let timeoutId;
@@ -139,7 +223,7 @@ export const DetailPage = () => {
       timeoutId = setTimeout(() => {
         handleScroll();
         timeoutId = null;
-      }, 100);
+      }, 50);
     };
 
     if (tocItems.length > 0) {
@@ -153,7 +237,7 @@ export const DetailPage = () => {
         clearTimeout(timeoutId);
       }
     };
-  }, [tocItems]);
+  }, [tocItems, isScrollingToTarget]);
 
   return (
     <DetailPageLayout>
@@ -162,7 +246,6 @@ export const DetailPage = () => {
         <Title>{detailPost.title}</Title>
 
         <CategoryBox>
-          {/* TODO 클릭시 해당 카테고리의 포스트 목록으로 이동 하게 구현*/}
           <CategoryText>{detailPost.category}</CategoryText>
         </CategoryBox>
 
@@ -184,7 +267,11 @@ export const DetailPage = () => {
         <MobileNavList>
           {tocItems.map((item, index) => (
             <MobileNavItem key={index} $isSubItem={item.isSubItem}>
-              <MobileNavLink href={item.href} onClick={(e) => handleTocClick(e, item.href)}>
+              <MobileNavLink
+                href={item.href}
+                $isActive={activeId.split(",").includes(item.id)}
+                onClick={(e) => handleTocClick(e, item.href)}
+              >
                 {item.title}
               </MobileNavLink>
             </MobileNavItem>
@@ -203,7 +290,7 @@ export const DetailPage = () => {
                   <SidebarItem key={index} $isSubItem={item.isSubItem}>
                     <SidebarLink
                       href={item.href}
-                      $isActive={activeId === item.id}
+                      $isActive={activeId.split(",").includes(item.id)}
                       onClick={(e) => handleTocClick(e, item.href)}
                     >
                       {item.title}
@@ -406,21 +493,15 @@ const SidebarItem = styled.li`
 `;
 
 const SidebarLink = styled.a`
-  color: ${(props) => (props.$isActive ? "#db2777" : "#6b7280")};
+  color: ${(props) => (props.$isActive ? "#f472b6" : "#9ca3af")};
   text-decoration: none;
   transition: color 0.2s ease;
-
-  &:hover {
-    color: #db2777;
-  }
-
-  color: ${(props) => (props.$isActive ? "#f472b6" : "#9ca3af")};
+  font-weight: ${(props) => (props.$isActive ? "600" : "400")};
 
   &:hover {
     color: #f472b6;
   }
 `;
-
 const ActionButtonsContainer = styled.div`
   display: flex;
   gap: 0.5rem;
@@ -506,10 +587,12 @@ const MobileNavItem = styled.li`
 `;
 
 const MobileNavLink = styled.a`
-  color: var(--Text-Color);
+  color: ${(props) => (props.$isActive ? "#f472b6" : "var(--Text-Color)")};
   text-decoration: none;
   text-underline-offset: 4px;
-  border-bottom: 1px solid var(--Text-Color);
+  border-bottom: 1px solid ${(props) => (props.$isActive ? "#f472b6" : "var(--Text-Color)")};
+  font-weight: ${(props) => (props.$isActive ? "600" : "400")};
+
   &:hover {
     color: #f472b6;
   }

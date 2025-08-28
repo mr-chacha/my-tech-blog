@@ -108,7 +108,7 @@ export const Header = () => {
           )}
           {userInfo && (
             <GlobalText className="header-title" font="var(--Body-M)" onClick={handleSignOut}>
-              LogOut
+              Logout
             </GlobalText>
           )}
         </NavLinksContainer>
