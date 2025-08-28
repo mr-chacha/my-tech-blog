@@ -1,7 +1,7 @@
 import {marked} from "marked";
 import styled from "styled-components";
 import {useBlogApis} from "@/common/apis";
-import {useNavigate} from "react-router-dom";
+import {useLocation, useNavigate} from "react-router-dom";
 import {EditorState} from "@codemirror/state";
 import {EditorView, basicSetup} from "codemirror";
 import {serverTimestamp} from "firebase/firestore";
@@ -20,8 +20,9 @@ export const FormPage = () => {
   ];
 
   const nav = useNavigate();
-  const {userInfo} = useZustandStore();
-  const {postImage, postPost} = useBlogApis();
+  const location = useLocation();
+  const {userInfo, setActiveModal, setModalMessage, setModalConfirmHandler} = useZustandStore();
+  const {postImage, postPost, fetchDetailPost} = useBlogApis();
   const [title, setTitle] = useState("");
   const [activeTab, setActiveTab] = useState([]);
   const [editorContent, setEditorContent] = useState("");
@@ -31,6 +32,9 @@ export const FormPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [isUserLoading, setIsUserLoading] = useState(true);
+
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editPostId, setEditPostId] = useState(null);
 
   const tagInputRef = useRef(null);
   const editorRef = useRef(null);
@@ -343,20 +347,45 @@ export const FormPage = () => {
   const handleSavePost = async () => {
     // 필수 필드 검증
     if (!title.trim()) {
-      alert("제목을 입력해주세요.");
+      setActiveModal({
+        oneButtonModal: true,
+      });
+      setModalMessage({
+        topMessage: "제목을 입력해주세요.",
+      });
       return;
     }
 
     if (!editorContent.trim()) {
-      alert("내용을 입력해주세요.");
+      setActiveModal({
+        oneButtonModal: true,
+      });
+      setModalMessage({
+        topMessage: "내용을 입력해주세요.",
+      });
       return;
     }
 
     if (!category.trim()) {
-      alert("카테고리를 선택해주세요.");
+      setActiveModal({
+        oneButtonModal: true,
+      });
+      setModalMessage({
+        topMessage: "카테고리를 선택해주세요.",
+      });
       return;
     }
+    setActiveModal({
+      twoButtonModal: true,
+    });
+    setModalMessage({
+      topMessage: isEditMode ? "포스트를 수정하시겠습니까?" : "포스트를 저장하시겠습니까?",
+    });
 
+    setModalConfirmHandler(() => submit());
+  };
+
+  const submit = async () => {
     try {
       setIsLoading(true);
 
@@ -381,18 +410,32 @@ export const FormPage = () => {
         tags: activeTab,
         published: true,
         author: "차차",
+        authorId: userInfo?.uid,
       };
 
       // Firestore에 문서 추가 API
       const response = await postPost("posts", postData);
       if (response.id) {
         nav(`/post/${response.id}`);
+        setActiveModal({
+          twoButtonModal: false,
+        });
       }
 
       // 폼 초기화
       resetForm();
     } catch (error) {
-      console.error("포스트 저장 실패:", error);
+      setActiveModal({
+        twoButtonModal: true,
+      });
+      setModalMessage({
+        topMessage: "포스트 저장에 실패했습니다.",
+      });
+      setModalConfirmHandler(() => () => {
+        setActiveModal({
+          twoButtonModal: false,
+        });
+      });
     } finally {
       setIsLoading(false);
     }
@@ -470,6 +513,66 @@ export const FormPage = () => {
   marked.setOptions({
     breaks: true,
   });
+
+  // 수정 포스트 조회
+  const loadPostForEdit = async (postId) => {
+    try {
+      setIsLoading(true);
+      const postData = await fetchDetailPost(postId);
+
+      // 폼에 기존 데이터 설정
+      setTitle(postData.title || "");
+      setCategory(postData.category || "");
+      setActiveTab(postData.tags || []);
+      setEditorContent(postData.content || "");
+
+      // 카테고리가 기본 목록에 없으면 직접입력으로 설정
+      const categoryExists = CATEGORY_LIST.some((cat) => cat.value === postData.category);
+      if (!categoryExists && postData.category) {
+        setCategory("직접입력");
+        setCategoryInput(postData.category);
+      }
+
+      setTimeout(() => {
+        if (editorViewRef.current && postData.content) {
+          editorViewRef.current.dispatch({
+            changes: {
+              from: 0,
+              to: editorViewRef.current.state.doc.length,
+              insert: postData.content,
+            },
+          });
+        }
+      }, 100);
+    } catch (error) {
+      console.error("포스트 로드 실패:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsUserLoading(false);
+      if (!userInfo) {
+        nav("/");
+      }
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [userInfo]);
+
+  // URL 쿼리 파라미터에서 수정할 포스트 ID 확인
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const postId = searchParams.get("id");
+
+    if (postId) {
+      setIsEditMode(true);
+      setEditPostId(postId);
+      loadPostForEdit(postId);
+    }
+  }, [location.search]);
 
   return (
     <FormLayout>

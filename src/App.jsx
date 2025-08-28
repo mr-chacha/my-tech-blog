@@ -7,6 +7,7 @@ import styled from "styled-components";
 import {useZustandStore} from "@/common/store";
 import {auth} from "@/server/firebase";
 import {onAuthStateChanged} from "firebase/auth";
+import {OneButtonModal, TwoButtonModal} from "@/common/ui";
 
 function AppContent() {
   const {isDarkMode, userInfo, setUserInfo} = useZustandStore();
@@ -53,7 +54,10 @@ function AppContent() {
               {/* 로그인된 사용자가 /login에 접근하려 할 때 메인으로 리다이렉트 */}
               <Route path="/login" element={<Navigate to="/" replace />} />
             </Routes>
+            <OneButtonModal />
+            <TwoButtonModal />
           </Layout>
+
           <Footer />
         </>
       )}

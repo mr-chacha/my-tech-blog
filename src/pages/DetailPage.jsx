@@ -5,13 +5,18 @@ import remarkBreaks from "remark-breaks";
 import {useBlogApis} from "@/common/apis";
 import {useParams} from "react-router-dom";
 import ReactMarkdown from "react-markdown";
+import {useNavigate} from "react-router-dom";
 import {formatTimestamp} from "@/common/util";
+import {useZustandStore} from "@/common/store";
 import React, {useState, useEffect} from "react";
 import {CalendarSVG, LinkCopySVG, ReplySVG, ScrollTopSVG} from "@public/Icon";
 
 export const DetailPage = () => {
   const {detailId} = useParams();
-  const {fetchDetailPost} = useBlogApis();
+  const navigate = useNavigate();
+  const {fetchDetailPost, deletePost} = useBlogApis();
+  const {userInfo, setActiveModal, setModalMessage, setModalButton, setModalConfirmHandler} = useZustandStore();
+
   const [detailPost, setDetailPost] = useState("");
   const [tocItems, setTocItems] = useState([]);
   // toc 활성화 상태
@@ -163,7 +168,7 @@ export const DetailPage = () => {
     return headings;
   };
 
-  // 상세 포트트 가져오기 API
+  // 상세 포스트 가져오기 API
   const getDetailPost = async (detailId) => {
     try {
       const response = await fetchDetailPost(detailId);
@@ -174,6 +179,59 @@ export const DetailPage = () => {
     } catch (error) {
       console.error("포스트 가져오기 오류:", error);
     }
+  };
+
+  const handleDeletePost = () => {
+    setActiveModal({twoButtonModal: true});
+    setModalMessage({
+      topMessage: "정말로 이 포스트를 삭제하시겠습니까?",
+      bottomMessage: "이 작업은 되돌릴 수 없습니다.",
+    });
+    setModalButton({
+      cancelButton: "취소",
+      confirmButton: "삭제",
+    });
+    setModalConfirmHandler(() => confirmDelete());
+  };
+
+  // 삭제 확인
+  const confirmDelete = async () => {
+    try {
+      await deletePost(detailId);
+      setActiveModal({twoButtonModal: false});
+      setModalMessage({
+        topMessage: "포스트가 성공적으로 삭제되었습니다.",
+        bottomMessage: "",
+      });
+      setModalButton({
+        cancelButton: "",
+        confirmButton: "확인",
+      });
+      setModalConfirmHandler(() => () => {
+        setActiveModal({oneButtonModal: false});
+        navigate("/");
+      });
+      setActiveModal({oneButtonModal: true});
+      navigate("/");
+    } catch (error) {
+      console.error("삭제 오류:", error);
+      setActiveModal({twoButtonModal: false});
+      setModalMessage({
+        topMessage: "삭제 중 오류가 발생했습니다.",
+        bottomMessage: "다시 시도해주세요.",
+      });
+      setModalButton({
+        cancelButton: "",
+        confirmButton: "확인",
+      });
+      setModalConfirmHandler(() => () => setActiveModal({oneButtonModal: false}));
+      setActiveModal({oneButtonModal: true});
+    }
+  };
+
+  // 포스트 수정 핸들러
+  const handleEditPost = () => {
+    navigate(`/form?id=${detailId}`);
   };
 
   useEffect(() => {
@@ -258,6 +316,13 @@ export const DetailPage = () => {
           </PostTimeBox>
         </PostTimeSection>
 
+        {/* 관리자일 때만 수정/삭제 버튼 표시 */}
+        {userInfo && (
+          <AdminButtonSection>
+            <EditButton onClick={handleEditPost}>수정</EditButton>
+            <DeleteButton onClick={handleDeletePost}>삭제</DeleteButton>
+          </AdminButtonSection>
+        )}
         <HeaderHr />
       </HeaderSection>
 
@@ -325,6 +390,45 @@ export const DetailPage = () => {
     </DetailPageLayout>
   );
 };
+
+const AdminButtonSection = styled.div`
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  margin-top: 1rem;
+`;
+
+const EditButton = styled.button`
+  padding: 0.5rem 1rem;
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: #2563eb;
+  }
+`;
+
+const DeleteButton = styled.button`
+  padding: 0.5rem 1rem;
+  background-color: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: #dc2626;
+  }
+`;
 
 const ContentSection = styled.div`
   h1 {

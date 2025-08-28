@@ -1,6 +1,6 @@
 import {auth, db, storage} from "@/server/firebase";
 import {ref, uploadBytes, getDownloadURL} from "firebase/storage";
-import {doc, getDoc, collection, addDoc} from "firebase/firestore";
+import {doc, getDoc, collection, addDoc, deleteDoc, updateDoc} from "firebase/firestore";
 import {GithubAuthProvider, signInWithPopup, signOut} from "firebase/auth";
 
 export const useBlogApis = () => {
@@ -36,6 +36,7 @@ export const useBlogApis = () => {
     return docRef;
   };
 
+  // 포스트 이미지 등록
   const postImage = async (fileName, tempFile) => {
     const storageRef = ref(storage, fileName);
     const snapshot = await uploadBytes(storageRef, tempFile.file);
@@ -43,5 +44,17 @@ export const useBlogApis = () => {
     return downloadURL;
   };
 
-  return {fetchDetailPost, postImage, postPost, gutHubLogin};
+  // 포스트 삭제
+  const deletePost = async (postId) => {
+    const postRef = doc(db, "posts", postId);
+    await deleteDoc(postRef);
+  };
+
+  // 포스트 수정
+  const updatePost = async (postId, updateData) => {
+    const postRef = doc(db, "posts", postId);
+    await updateDoc(postRef, updateData);
+  };
+
+  return {fetchDetailPost, postImage, postPost, gutHubLogin, deletePost, updatePost};
 };
