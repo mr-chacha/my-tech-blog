@@ -3,13 +3,16 @@ import React, {useEffect, useState} from "react";
 import styled from "styled-components";
 import {db} from "@/server/firebase";
 import {collection, getDocs, orderBy, query} from "firebase/firestore";
+import {useZustandStore} from "@/common/store";
 
 export const MainPage = () => {
+  const {setIsLoading} = useZustandStore();
+
   const [recentPostLists, setRecentPostLists] = useState([]);
   const [postLists, setPostLists] = useState([]);
-
   const fetchPostData = async () => {
     try {
+      setIsLoading(true);
       const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
 
       const postData = await getDocs(q);
@@ -29,6 +32,8 @@ export const MainPage = () => {
 
       setRecentPostLists([]);
       setPostLists([]);
+    } finally {
+      setIsLoading(false);
     }
   };
 

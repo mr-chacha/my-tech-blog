@@ -15,7 +15,8 @@ export const DetailPage = () => {
   const {detailId} = useParams();
   const navigate = useNavigate();
   const {fetchDetailPost, deletePost} = useBlogApis();
-  const {userInfo, setActiveModal, setModalMessage, setModalButton, setModalConfirmHandler} = useZustandStore();
+  const {userInfo, setActiveModal, setModalMessage, setModalButton, setModalConfirmHandler, setIsLoading} =
+    useZustandStore();
 
   const [detailPost, setDetailPost] = useState("");
   const [tocItems, setTocItems] = useState([]);
@@ -127,7 +128,6 @@ export const DetailPage = () => {
   };
 
   // h1~h4 태그를 추출해서 toc를 만드는 함수
-
   const tocFromMarkdown = (markdownContent) => {
     if (!markdownContent) return [];
     const headingRegex = /^(#{1,4})\s+(.+)$/gm;
@@ -178,6 +178,8 @@ export const DetailPage = () => {
       setTocItems(contentToc);
     } catch (error) {
       console.error("포스트 가져오기 오류:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -236,6 +238,7 @@ export const DetailPage = () => {
 
   useEffect(() => {
     if (detailId) {
+      setIsLoading(true);
       getDetailPost(detailId);
     }
   }, [detailId]);

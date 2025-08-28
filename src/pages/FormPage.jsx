@@ -21,7 +21,8 @@ export const FormPage = () => {
 
   const nav = useNavigate();
   const location = useLocation();
-  const {userInfo, setActiveModal, setModalMessage, setModalConfirmHandler} = useZustandStore();
+  const {userInfo, setActiveModal, setModalMessage, setModalConfirmHandler, isLoading, setIsLoading} =
+    useZustandStore();
   const {postImage, postPost, fetchDetailPost} = useBlogApis();
   const [title, setTitle] = useState("");
   const [activeTab, setActiveTab] = useState([]);
@@ -29,9 +30,7 @@ export const FormPage = () => {
   const [category, setCategory] = useState("");
   const [categoryInput, setCategoryInput] = useState("");
   const [tempFiles, setTempFiles] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
-  const [isUserLoading, setIsUserLoading] = useState(true);
 
   const [isEditMode, setIsEditMode] = useState(false);
   const [editPostId, setEditPostId] = useState(null);
@@ -44,8 +43,9 @@ export const FormPage = () => {
   const dropAreaRef = useRef(null);
 
   useEffect(() => {
+    setIsLoading(true);
     const timer = setTimeout(() => {
-      setIsUserLoading(false);
+      setIsLoading(false);
       if (!userInfo)
         if (!userInfo) {
           nav("/");
@@ -552,8 +552,9 @@ export const FormPage = () => {
   };
 
   useEffect(() => {
+    setIsLoading(true);
     const timer = setTimeout(() => {
-      setIsUserLoading(false);
+      setIsLoading(false);
       if (!userInfo) {
         nav("/");
       }
@@ -564,6 +565,7 @@ export const FormPage = () => {
 
   // URL 쿼리 파라미터에서 수정할 포스트 ID 확인
   useEffect(() => {
+    setIsLoading(true);
     const searchParams = new URLSearchParams(location.search);
     const postId = searchParams.get("id");
 
@@ -571,6 +573,7 @@ export const FormPage = () => {
       setIsEditMode(true);
       setEditPostId(postId);
       loadPostForEdit(postId);
+      setIsLoading(false);
     }
   }, [location.search]);
 
