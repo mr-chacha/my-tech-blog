@@ -31,7 +31,7 @@ const Message = styled.div`
   line-height: 1.5;
 
   &.top-message {
-    color: #42b883;
+    color: var(--Brand-Colors);
     font-size: 18px;
     font-weight: 600;
     margin-bottom: 4px;
@@ -70,7 +70,7 @@ const ConfirmButton = styled.div`
   justify-content: center;
   align-items: center;
   border-radius: 8px;
-  background: #42b883;
+  background: var(--Brand-Colors);
   cursor: pointer;
   color: #ffffff;
   line-height: 1;

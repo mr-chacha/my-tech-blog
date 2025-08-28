@@ -403,7 +403,7 @@ const AdminButtonSection = styled.div`
 
 const EditButton = styled.button`
   padding: 0.5rem 1rem;
-  background-color: #3b82f6;
+  background-color: var(--Brand-Colors);
   color: white;
   border: none;
   border-radius: 0.375rem;
