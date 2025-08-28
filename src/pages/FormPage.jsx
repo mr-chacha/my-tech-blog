@@ -30,6 +30,7 @@ export const FormPage = () => {
   const [tempFiles, setTempFiles] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [isUserLoading, setIsUserLoading] = useState(true);
 
   const tagInputRef = useRef(null);
   const editorRef = useRef(null);
@@ -39,9 +40,15 @@ export const FormPage = () => {
   const dropAreaRef = useRef(null);
 
   useEffect(() => {
-    if (!userInfo) {
-      nav("/");
-    }
+    const timer = setTimeout(() => {
+      setIsUserLoading(false);
+      if (!userInfo)
+        if (!userInfo) {
+          nav("/");
+        }
+    }, 1000);
+
+    return () => clearTimeout(timer);
   }, [userInfo]);
 
   // 폼 초기화 함수
@@ -791,7 +798,7 @@ const RightSection = styled.div`
   padding: 3rem;
   word-break: break-word;
   overflow-y: auto;
-  background-color: #fbfdfc;
+  background-color: var(--Content-Back-Color);
   max-width: 50%;
 
   @media (max-width: 1024px) {
@@ -955,12 +962,16 @@ const FormEditorContainer = styled.div`
 
 const PreviewContainer = styled.div`
   height: 100%;
+  background-color: var(--Content-Back-Color);
+  color: var(--Text-Color) !important;
 `;
 
 const PreviewContent = styled.div`
   height: calc(100% - 8rem);
   overflow-y: auto;
   line-height: 1.6;
+  background-color: var(--Content-Back-Color);
+  color: var(--Text-Color) !important;
 
   h1,
   h2,
@@ -970,6 +981,8 @@ const PreviewContent = styled.div`
   h6 {
     margin: 1.5rem 0 1rem 0;
     font-weight: bold;
+
+    color: var(--Text-Color);
   }
 
   h1 {

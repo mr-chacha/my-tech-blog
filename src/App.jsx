@@ -61,9 +61,18 @@ function AppContent() {
   );
 }
 
-
 function App() {
-  return <div>xptmxm</div>;
+  return (
+    <BrowserRouter>
+      <AppContent />
+    </BrowserRouter>
+  );
 }
 
+const Layout = styled.main`
+  margin: 60px auto 0px;
+  max-width: ${(props) => (props?.$layout ? "100%" : "1200px")};
+  margin-top: 64px;
+  background-color: var(--Back-Color);
+`;
 export default App;
