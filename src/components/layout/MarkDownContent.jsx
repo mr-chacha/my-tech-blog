@@ -13,10 +13,6 @@ export const MarkDownContent = ({content, tempFiles = [], isPreview = false}) =>
   const convertTempImagesToPreview = (markdownContent) => {
     let convertedContent = markdownContent;
 
-    console.log("=== 이미지 변환 디버깅 ===");
-    console.log("원본 내용:", markdownContent);
-    console.log("tempFiles:", tempFiles);
-
     if (tempFiles && tempFiles.length > 0) {
       tempFiles.forEach((tempFile) => {
         console.log("처리할 파일:", tempFile.tempName, "->", tempFile.base64Url);
@@ -25,7 +21,6 @@ export const MarkDownContent = ({content, tempFiles = [], isPreview = false}) =>
       });
     }
 
-    console.log("변환 후 내용:", convertedContent);
     return convertedContent;
   };
 
