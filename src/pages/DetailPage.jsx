@@ -10,6 +10,7 @@ import {formatTimestamp} from "@/common/util";
 import {useZustandStore} from "@/common/store";
 import React, {useState, useEffect} from "react";
 import {CalendarSVG, LinkCopySVG, ReplySVG, ScrollTopSVG} from "@public/Icon";
+import {MarkDownContent} from "@/components/layout";
 
 export const DetailPage = () => {
   const {detailId} = useParams();
@@ -130,7 +131,8 @@ export const DetailPage = () => {
   // h1~h4 태그를 추출해서 toc를 만드는 함수
   const tocFromMarkdown = (markdownContent) => {
     if (!markdownContent) return [];
-    const headingRegex = /^(#{1,4})\s+(.+)$/gm;
+    // 블록쿼트 안의 헤딩도 인식하도록 정규식 수정
+    const headingRegex = /^(?:>\s*)?(#{1,4})\s+(.+)$/gm;
     const headings = [];
     const titleCounts = {};
     let match;
@@ -383,12 +385,7 @@ export const DetailPage = () => {
             </ActionButtonsContainer>
           </SidebarSection>
         </SidebarLayout>
-
-        <ContentSection>
-          <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} rehypePlugins={[rehypeSlug]}>
-            {detailPost.content}
-          </ReactMarkdown>
-        </ContentSection>
+        <MarkDownContent content={detailPost?.content} tempFiles={[]} isPreview={false} />
       </DetailBodySection>
     </DetailPageLayout>
   );
@@ -433,114 +430,6 @@ const DeleteButton = styled.button`
   }
 `;
 
-const ContentSection = styled.div`
-  h1 {
-    font-size: 2.5rem;
-    font-weight: bold;
-    margin-top: 2rem;
-    margin-bottom: 1rem;
-    line-height: 1.2;
-    color: var(--Text-Color);
-  }
-
-  h2 {
-    font-size: 2rem;
-    font-weight: bold;
-    margin-top: 1.5rem;
-    margin-bottom: 0.75rem;
-    line-height: 1.3;
-    color: var(--Text-Color);
-  }
-
-  h3 {
-    font-size: 1.5rem;
-    font-weight: bold;
-    margin-top: 1.25rem;
-    margin-bottom: 0.5rem;
-    color: var(--Text-Color);
-  }
-
-  p {
-    font: var(--Headline-R);
-    margin-bottom: 1rem;
-    color: var(--Text-Color);
-    white-space: pre-line;
-  }
-
-  strong {
-    font-weight: bold;
-    color: var(--Text-Color);
-  }
-
-  em {
-    font-style: italic;
-    color: var(--Text-Color);
-  }
-
-  img {
-    max-width: 100%;
-    height: auto;
-    display: block;
-    margin: 1.5rem auto;
-    border-radius: 8px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  }
-
-  code {
-    background: #f1f5f9;
-    padding: 3px 6px;
-    border-radius: 4px;
-    font-size: 0.875rem;
-    font-family: Monaco, Consolas, monospace;
-    color: var(--Back-Color);
-  }
-
-  pre {
-    background: #f8fafc;
-    padding: 16px;
-    border-radius: 8px;
-    overflow: auto;
-    margin: 1.5rem 0;
-    border: 1px solid #e2e8f0;
-
-    code {
-      background: none;
-      padding: 0;
-      font-family: Monaco, Consolas, monospace;
-      font-size: 0.875rem;
-    }
-  }
-
-  ul {
-    margin-left: 1.5rem;
-    margin-bottom: 1rem;
-    list-style-type: disc;
-  }
-
-  li {
-    margin-bottom: 0.5rem;
-    line-height: 1.6;
-  }
-
-  a {
-    color: #3b82f6;
-    text-decoration: underline;
-
-    &:hover {
-      color: #2563eb;
-    }
-  }
-
-  blockquote {
-    border-left: 4px solid #3b82f6;
-    padding-left: 1rem;
-    margin: 1rem 0;
-    color: #6b7280;
-    background-color: #f8fafc;
-    padding: 1rem;
-    border-radius: 0.25rem;
-  }
-`;
 const DetailBodySection = styled.article``;
 const SidebarLayout = styled.aside`
   position: absolute;
@@ -572,14 +461,12 @@ const SidebarContainer = styled.div`
   padding-right: 1rem;
   padding-top: 0.5rem;
   padding-bottom: 0.5rem;
-
   border-left-color: #374151;
 `;
 
 const SidebarTitle = styled.div`
   margin-bottom: 0.25rem;
   font-weight: 700;
-  color: #374151;
 
   color: var(--Text-Color);
 `;
@@ -784,12 +671,10 @@ const DetailPageLayout = styled.div`
   max-width: 750px;
   padding-left: 1.25rem;
   padding-right: 1.25rem;
+  color: var(--Text-Color);
 
   @media (min-width: 640px) {
     padding-left: 1.5rem;
     padding-right: 1.5rem;
   }
-
-  font: var(--Large-Title);
-  color: var(--Text-Color);
 `;

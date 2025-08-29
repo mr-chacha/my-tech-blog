@@ -23,7 +23,7 @@ export const FormPage = () => {
   const location = useLocation();
   const {userInfo, setActiveModal, setModalMessage, setModalConfirmHandler, isLoading, setIsLoading} =
     useZustandStore();
-  const {postImage, postPost, fetchDetailPost} = useBlogApis();
+  const {postImage, postPost, fetchDetailPost, updatePost} = useBlogApis();
   const [title, setTitle] = useState("");
   const [activeTab, setActiveTab] = useState([]);
   const [editorContent, setEditorContent] = useState("");
@@ -41,19 +41,6 @@ export const FormPage = () => {
   const editorViewRef = useRef(null);
   const fileInputRef = useRef(null);
   const dropAreaRef = useRef(null);
-
-  useEffect(() => {
-    setIsLoading(true);
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-      if (!userInfo)
-        if (!userInfo) {
-          nav("/");
-        }
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, [userInfo]);
 
   // 폼 초기화 함수
   const resetForm = () => {
@@ -118,16 +105,6 @@ export const FormPage = () => {
     fileInputRef.current?.click();
   };
 
-  // 마크다운을 HTML로 변환
-  const convertMarkdownToHtml = (markdownText) => {
-    try {
-      // 이미지들을 base64 URL로 변환한 후 HTML로 변환
-      const convertedContent = convertTempImagesToPreview(markdownText);
-      return marked(convertedContent);
-    } catch (error) {
-      return markdownText;
-    }
-  };
   // 임시 파일명을 실제 URL로 변환하는 함수
   const convertTempImagesToPreview = (markdownContent) => {
     let convertedContent = markdownContent;
@@ -249,6 +226,17 @@ export const FormPage = () => {
 
   const removeTag = (indexToRemove) => {
     setActiveTab((prev) => prev.filter((_, index) => index !== indexToRemove));
+  };
+
+  // 마크다운을 HTML로 변환
+  const convertMarkdownToHtml = (markdownText) => {
+    try {
+      // 이미지들을 base64 URL로 변환한 후 HTML로 변환
+      const convertedContent = convertTempImagesToPreview(markdownText);
+      return marked(convertedContent);
+    } catch (error) {
+      return markdownText;
+    }
   };
 
   // 파일을 base64로 변환하는 함수
@@ -392,9 +380,16 @@ export const FormPage = () => {
       // base64 이미지들을 Firebase Storage에 업로드하고 URL 교체
       const {content: finalContent, files: uploadedFileInfos} = await uploadImage();
 
-      // 대표 이미지 설정 (첫 번째 업로드된 이미지)
-      const representativeImage = uploadedFileInfos.length > 0 ? uploadedFileInfos[0].url : null;
+      // 대표 이미지 설정 (첫 번째 업로드된 이미지이거나 수정시에는 content에서 첫 번째 이미지 추출)
+      let representativeImage = null;
 
+      if (uploadedFileInfos.length > 0) {
+        representativeImage = uploadedFileInfos[0].url;
+      } else {
+        const imageRegex = /!\[.*?\]\((https?:\/\/[^\s\)]+)\)/;
+        const match = finalContent.match(imageRegex);
+        representativeImage = match ? match[1] : null;
+      }
       const postData = {
         title: title.trim(),
         content: finalContent,
@@ -413,14 +408,19 @@ export const FormPage = () => {
         authorId: userInfo?.uid,
       };
 
-      // Firestore에 문서 추가 API
-      const response = await postPost("posts", postData);
-      if (response.id) {
+      // 수정 모드와 등록 모드 구분
+      if (isEditMode && editPostId) {
+        await updatePost(editPostId, postData);
+        nav(`/post/${editPostId}`);
+      } else {
+        // 등록 모드: 새로운 포스트 생성
+        postData.createdAt = serverTimestamp();
+        const response = await postPost("posts", postData);
         nav(`/post/${response.id}`);
-        setActiveModal({
-          twoButtonModal: false,
-        });
       }
+      setActiveModal({
+        twoButtonModal: false,
+      });
 
       // 폼 초기화
       resetForm();
@@ -440,6 +440,74 @@ export const FormPage = () => {
       setIsLoading(false);
     }
   };
+
+  // marked 설정
+  marked.setOptions({
+    breaks: true,
+  });
+
+  // 수정 포스트 조회
+  const loadPostForEdit = async (postId) => {
+    try {
+      setIsLoading(true);
+      const postData = await fetchDetailPost(postId);
+
+      // 폼에 기존 데이터 설정
+      setTitle(postData.title || "");
+      setCategory(postData.category || "");
+      setActiveTab(postData.tags || []);
+      setEditorContent(postData.content || "");
+
+      // 카테고리가 기본 목록에 없으면 직접입력으로 설정
+      const categoryExists = CATEGORY_LIST.some((cat) => cat.value === postData.category);
+      if (!categoryExists && postData.category) {
+        setCategory("직접입력");
+        setCategoryInput(postData.category);
+      }
+
+      setTimeout(() => {
+        if (editorViewRef.current && postData.content) {
+          editorViewRef.current.dispatch({
+            changes: {
+              from: 0,
+              to: editorViewRef.current.state.doc.length,
+              insert: postData.content,
+            },
+          });
+        }
+      }, 100);
+    } catch (error) {
+      console.error("포스트 로드 실패:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    setIsLoading(true);
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+      if (!userInfo) {
+        nav("/");
+      }
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [userInfo]);
+
+  // URL 쿼리 파라미터에서 수정할 포스트 ID 확인
+  useEffect(() => {
+    setIsLoading(true);
+    const searchParams = new URLSearchParams(location.search);
+    const postId = searchParams.get("id");
+
+    if (postId) {
+      setIsEditMode(true);
+      setEditPostId(postId);
+      loadPostForEdit(postId);
+      setIsLoading(false);
+    }
+  }, [location.search]);
 
   // 에디터 초기화
   useEffect(() => {
@@ -509,73 +577,18 @@ export const FormPage = () => {
     }
   }, []);
 
-  // marked 설정
-  marked.setOptions({
-    breaks: true,
-  });
-
-  // 수정 포스트 조회
-  const loadPostForEdit = async (postId) => {
-    try {
-      setIsLoading(true);
-      const postData = await fetchDetailPost(postId);
-
-      // 폼에 기존 데이터 설정
-      setTitle(postData.title || "");
-      setCategory(postData.category || "");
-      setActiveTab(postData.tags || []);
-      setEditorContent(postData.content || "");
-
-      // 카테고리가 기본 목록에 없으면 직접입력으로 설정
-      const categoryExists = CATEGORY_LIST.some((cat) => cat.value === postData.category);
-      if (!categoryExists && postData.category) {
-        setCategory("직접입력");
-        setCategoryInput(postData.category);
-      }
-
-      setTimeout(() => {
-        if (editorViewRef.current && postData.content) {
-          editorViewRef.current.dispatch({
-            changes: {
-              from: 0,
-              to: editorViewRef.current.state.doc.length,
-              insert: postData.content,
-            },
-          });
-        }
-      }, 100);
-    } catch (error) {
-      console.error("포스트 로드 실패:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   useEffect(() => {
     setIsLoading(true);
     const timer = setTimeout(() => {
       setIsLoading(false);
-      if (!userInfo) {
-        nav("/");
-      }
+      if (!userInfo)
+        if (!userInfo) {
+          nav("/");
+        }
     }, 1000);
 
     return () => clearTimeout(timer);
   }, [userInfo]);
-
-  // URL 쿼리 파라미터에서 수정할 포스트 ID 확인
-  useEffect(() => {
-    setIsLoading(true);
-    const searchParams = new URLSearchParams(location.search);
-    const postId = searchParams.get("id");
-
-    if (postId) {
-      setIsEditMode(true);
-      setEditPostId(postId);
-      loadPostForEdit(postId);
-      setIsLoading(false);
-    }
-  }, [location.search]);
 
   return (
     <FormLayout>
@@ -724,7 +737,7 @@ export const FormPage = () => {
         <RightSection>
           <PreviewContainer>
             <div className="title-input">{title}</div>
-            <PreviewContent
+            <ContentWrapper
               dangerouslySetInnerHTML={{
                 __html: convertMarkdownToHtml(editorContent),
               }}
@@ -735,7 +748,141 @@ export const FormPage = () => {
     </FormLayout>
   );
 };
+const ContentWrapper = styled.div`
+  font-weight: 400;
+  line-height: 1rem;
+  background-color: var(--Content-Back-Color);
+  color: var(--Text-Color) !important;
 
+  p + h1,
+  p + h2,
+  p + h3,
+  p + h4 {
+    margin-top: 3rem;
+  }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    line-height: 1.4rem;
+    margin: 1rem 0 0.5rem 0;
+    font-weight: bold;
+    color: var(--Text-Color);
+  }
+
+  h1 {
+    font-size: 3rem;
+    line-height: 3rem;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+  }
+  h2 {
+    font-size: 2rem;
+    line-height: 1.5rem;
+    margin-top: 0.93em;
+    margin-bottom: 0.93em;
+  }
+  h3 {
+    font-size: 1.5rem;
+    line-height: 1.5rem;
+    margin-top: 0.83em;
+    margin-bottom: 0.83em;
+  }
+  h4 {
+    font-size: 1.125rem;
+    line-height: 1.5rem;
+    margin-top: 0.73em;
+    margin-bottom: 0.73em;
+  }
+
+  p {
+    font-size: 1rem;
+    margin-bottom: 0.75rem;
+    color: var(--Text-Color);
+    white-space: pre-line;
+    line-height: 1rem;
+  }
+
+  li {
+    font-size: 1rem;
+    margin-bottom: 0.25rem;
+  }
+
+  ul {
+    margin-left: 1.5rem;
+    margin-bottom: 0.75rem;
+    list-style-type: disc;
+  }
+
+  strong {
+    font-weight: bold;
+    color: var(--Text-Color);
+  }
+
+  em {
+    font-style: italic;
+    color: var(--Text-Color);
+  }
+
+  img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 1.5rem auto;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  }
+
+  code {
+    background: #f1f5f9;
+    padding: 3px 6px;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-family: Monaco, Consolas, monospace;
+    color: var(--Back-Color);
+  }
+
+  pre {
+    background: #f8fafc;
+    padding: 16px;
+    border-radius: 8px;
+    overflow: auto;
+    margin: 1.5rem 0;
+    border: 1px solid #e2e8f0;
+
+    code {
+      background: none;
+      padding: 0;
+      font-family: Monaco, Consolas, monospace;
+      font-size: 0.875rem;
+    }
+  }
+
+  a {
+    color: #3b82f6;
+    text-decoration: underline;
+
+    &:hover {
+      color: #2563eb;
+    }
+  }
+
+  blockquote {
+    border-left: 4px solid #3b82f6;
+    padding-left: 1rem;
+    margin: 0.75rem 0;
+    color: #6b7280;
+    background-color: #f8fafc;
+    padding: 1rem;
+    border-radius: 0.25rem;
+  }
+
+  del {
+    text-decoration: line-through;
+  }
+`;
 const DragOverlay = styled.div`
   position: fixed;
   top: 0;
@@ -844,16 +991,6 @@ const ResetButton = styled.button`
     background-color: #9ca3af;
     cursor: not-allowed;
   }
-`;
-
-const CategoryPreview = styled.div`
-  font-size: 0.875rem;
-  color: #6b7280;
-  margin-bottom: 1rem;
-  padding: 0.25rem 0.5rem;
-  background-color: #f3f4f6;
-  border-radius: 0.25rem;
-  display: inline-block;
 `;
 
 const ActviveTag = styled.div`
@@ -1070,108 +1207,4 @@ const PreviewContainer = styled.div`
   height: 100%;
   background-color: var(--Content-Back-Color);
   color: var(--Text-Color) !important;
-`;
-
-const PreviewContent = styled.div`
-  height: calc(100% - 8rem);
-  overflow-y: auto;
-  line-height: 1.6;
-  background-color: var(--Content-Back-Color);
-  color: var(--Text-Color) !important;
-
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6 {
-    margin: 1.5rem 0 1rem 0;
-    font-weight: bold;
-
-    color: var(--Text-Color);
-  }
-
-  h1 {
-    font-size: 2.5rem;
-  }
-  h2 {
-    font-size: 2rem;
-  }
-  h3 {
-    font-size: 1.5rem;
-  }
-  h4 {
-    font-size: 1.125rem;
-  }
-
-  p {
-    margin: 1rem 0;
-  }
-
-  ul,
-  ol {
-    margin: 1rem 0;
-    padding-left: 2rem;
-  }
-
-  blockquote {
-    border-left: 4px solid #3b82f6;
-    padding-left: 1rem;
-    margin: 1rem 0;
-    color: #6b7280;
-    background-color: #f8fafc;
-    padding: 1rem;
-    border-radius: 0.25rem;
-  }
-
-  code {
-    background-color: #f1f5f9;
-    padding: 0.125rem 0.25rem;
-    border-radius: 0.25rem;
-    font-family: "Fira Code", monospace;
-    font-size: 0.875rem;
-  }
-
-  pre {
-    background-color: #f8fafc;
-    padding: 1rem;
-    border-radius: 0.375rem;
-    overflow-x: auto;
-    margin: 1rem 0;
-    border: 1px solid #e5e7eb;
-
-    code {
-      background: none;
-      padding: 0;
-    }
-  }
-
-  img {
-    max-width: 100%;
-    height: auto;
-    border-radius: 0.5rem;
-    margin: 1rem 0;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  }
-
-  strong {
-    font-weight: bold;
-  }
-
-  em {
-    font-style: italic;
-  }
-
-  del {
-    text-decoration: line-through;
-  }
-
-  a {
-    color: #3b82f6;
-    text-decoration: underline;
-
-    &:hover {
-      color: #2563eb;
-    }
-  }
 `;

@@ -1,9 +1,9 @@
-import {CategoryFilter, PostLists, RecentPostLists} from "@/components/main";
-import React, {useEffect, useState} from "react";
-import styled from "styled-components";
 import {db} from "@/server/firebase";
-import {collection, getDocs, orderBy, query} from "firebase/firestore";
+import styled from "styled-components";
+import React, {useEffect, useState} from "react";
 import {useZustandStore} from "@/common/store";
+import {PostLists, RecentPostLists} from "@/components/main";
+import {collection, getDocs, orderBy, query} from "firebase/firestore";
 
 export const MainPage = () => {
   const {setIsLoading} = useZustandStore();
@@ -49,10 +49,8 @@ export const MainPage = () => {
           <RecentPostLists recentPostLists={recentPostLists} />
           {/*hr */}
           <MainHr />
-          {/* 필터 버튼 */}
-          <CategoryFilter />
-          {/* 게시물 목록 - postLists prop 전달 */}
-          <PostLists postLists={postLists} />
+          {/* 게시물 목록  */}
+          <PostLists postLists={postLists} setPostLists={setPostLists} />
         </PostSection>
       ) : (
         <NoPostsContainer>
@@ -67,7 +65,6 @@ export const MainPage = () => {
   );
 };
 
-// 게시물 없음 상태 스타일 추가
 const NoPostsContainer = styled.div`
   display: flex;
   justify-content: center;
