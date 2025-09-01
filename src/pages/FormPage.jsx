@@ -700,7 +700,7 @@ export const FormPage = () => {
                     &lt;/&gt;
                   </FormToolButton>
                   <FormToolButton onClick={insertCodeBlock} title="코드 블록">
-                    {}
+                    {`{ }`}
                   </FormToolButton>
                   <FormToolButton onClick={insertLink} title="링크">
                     🔗
@@ -1180,6 +1180,9 @@ const FormEditorContainer = styled.div`
   flex: 1;
   border: none !important;
   overflow: hidden;
+  code {
+    background-color: var(--Text-Color) !important;
+  }
 
   .ͼ1 .cm-gutter {
     display: none !important;
@@ -1207,4 +1210,10 @@ const PreviewContainer = styled.div`
   height: 100%;
   background-color: var(--Content-Back-Color);
   color: var(--Text-Color) !important;
+  blockquote {
+    background-color: var(--Back-Color) !important;
+  }
+  code {
+    color: var(--Text-Color) !important;
+  }
 `;

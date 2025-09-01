@@ -67,8 +67,11 @@ export const MarkDownContent = ({content, tempFiles = [], isPreview = false}) =>
 const ContentWrapper = styled.div`
   font-weight: 400;
   line-height: 1rem;
-  background-color: var(--Content-Back-Color);
+  background-color: var(--Back-Color) !important;
   color: var(--Text-Color) !important;
+  blockquote {
+    background-color: var(--Back-Color) !important;
+  }
 
   p + h1,
   p + h2,
@@ -85,7 +88,7 @@ const ContentWrapper = styled.div`
     line-height: 1.4rem;
     margin: 1rem 0 0.5rem 0;
     font-weight: bold;
-    color: var(--Text-Color);
+    color: var(--Text-Color) !important;
   }
 
   h1 {
@@ -116,7 +119,7 @@ const ContentWrapper = styled.div`
   p {
     font-size: 1rem;
     margin-bottom: 0.75rem;
-    color: var(--Text-Color);
+    color: var(--Text-Color) !important;
     white-space: pre-line;
     line-height: 1rem;
   }

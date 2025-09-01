@@ -18,7 +18,7 @@ export const NotFoundPage = () => {
 };
 
 const Container = styled.div`
-  min-height: 80vh;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
