@@ -1,7 +1,7 @@
 import {GlobalStyles} from "@/common/style";
 import {Footer, Header} from "@/components/layout";
 import {AboutPage, DetailPage, FormPage, LoginPage, MainPage} from "@/pages";
-import React, {useEffect} from "react";
+import React, {useEffect, useState} from "react";
 import {BrowserRouter, Route, Routes, Navigate, useLocation} from "react-router-dom";
 import styled from "styled-components";
 import {useZustandStore} from "@/common/store";
@@ -14,7 +14,9 @@ function AppContent() {
   const layout = location.pathname.includes("/form");
   const isLoginPage = location.pathname === "/login";
   const isNotFoundPage =
-    !["/", "/about", "/form", "/login"].includes(location.pathname) && !location.pathname.startsWith("/post/"); // 404 페이지 감지
+    !["/", "/about", "/form", "/login"].includes(location.pathname) && !location.pathname.startsWith("/post/");
+
+  const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -29,10 +31,13 @@ function AppContent() {
       } else {
         setUserInfo(null);
       }
+      setAuthChecked(true);
     });
 
     return () => unsubscribe();
   }, [setUserInfo]);
+
+  if (!authChecked) return <LoadingSpinner />;
 
   return (
     <>
