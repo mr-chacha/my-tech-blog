@@ -190,7 +190,6 @@ const NavLinksContainer = styled.div`
 `;
 
 const NavTitle = styled.div`
-  font: var(--Body-B);
   border-radius: 9999px;
   padding: 0.25rem 1rem;
   display: flex;
@@ -198,17 +197,9 @@ const NavTitle = styled.div`
   justify-content: center;
   transition: all 0.2s ease;
   cursor: pointer;
-
-  color: var(--Text-Color);
-
-  ${(props) =>
-    props.$isActive &&
-    `
-    background-color: #f1f5f9;
-    color: #3b82f6;
-
-    
-  `}
+  background-color: ${(props) => (props.$isActive ? "#f1f5f9" : "transparent")};
+  color: ${(props) => (props.$isActive ? "#3b82f6" : "var(--Text-Color)")};
+  font: ${(props) => (props.$isActive ? "var(--Body-B)" : "var(--Body-M)")};
 `;
 
 const ActionsContainer = styled.div`

@@ -139,7 +139,15 @@ export const DetailPage = () => {
 
     while ((match = headingRegex.exec(markdownContent)) !== null) {
       const level = match[1].length;
-      const title = match[2].trim();
+      let title = match[2].trim();
+
+      // 타이틀에 이미지 url 제거
+      title = title.replace(/!\[[^\]]*\]\([^)]*\)/g, "");
+      title = title.replace(/\[([^\]]*)\]\([^)]*\)/g, "$1");
+      title = title.replace(/\*\*([^*]+)\*\*/g, "$1");
+      title = title.replace(/\*([^*]+)\*/g, "$1");
+      title = title.replace(/`([^`]+)`/g, "$1");
+      title = title.trim();
 
       const baseId = title
         .toLowerCase()
