@@ -1,8 +1,8 @@
-import React, {useState} from "react";
+import React from "react";
 import styled from "styled-components";
 import reactIcon from "@public/image/png/reactIcon.png";
 import {useCustomNav} from "@/common/util";
-import {CalendarSVG, ClockSVG} from "@public/Icon";
+import {CalendarSVG} from "@public/Icon";
 
 export const RecentPostLists = ({recentPostLists}) => {
   // 날짜 포맷팅 함수
@@ -35,16 +35,6 @@ export const RecentPostLists = ({recentPostLists}) => {
     }
 
     return timestamp;
-  };
-
-  const calculateReadTime = (content) => {
-    if (!content) return "1분";
-
-    const wordsPerMinute = 200;
-    const wordCount = content.length / 2;
-    const readTime = Math.ceil(wordCount / wordsPerMinute);
-
-    return `${readTime}분`;
   };
 
   const navHandler = useCustomNav();
@@ -80,12 +70,6 @@ export const RecentPostLists = ({recentPostLists}) => {
                   </CalendarIcon>
                   <span>{formatDate(latestPost.updatedAt || latestPost.createdAt)}</span>
                 </MetaItem>
-                <MetaItem>
-                  <ClockIcon>
-                    <ClockSVG />
-                  </ClockIcon>
-                  <span>{calculateReadTime(latestPost.content)}</span>
-                </MetaItem>
               </PostMeta>
             </PostContent>
           </LatestPostItem>
@@ -109,12 +93,6 @@ export const RecentPostLists = ({recentPostLists}) => {
                           <CalendarSVG />
                         </CalendarIcon>
                         <span>{formatDate(post.updatedAt || post.createdAt)}</span>
-                      </MetaItem>
-                      <MetaItem>
-                        <ClockIcon>
-                          <ClockSVG />
-                        </ClockIcon>
-                        <span>{calculateReadTime(post.content)}</span>
                       </MetaItem>
                     </PostMeta>
                   </RecommendedPostContent>
