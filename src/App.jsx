@@ -69,7 +69,6 @@ function AppContent() {
             <OneButtonModal />
             <TwoButtonModal />
           </Layout>
-
           <Footer />
         </>
       )}

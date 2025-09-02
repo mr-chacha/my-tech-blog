@@ -356,11 +356,6 @@ const RecommendedPostCard = styled.div`
   flex: 1;
   height: 100%;
   cursor: pointer;
-  @media (max-width: 980px) {
-    &:last-child {
-      display: none;
-    }
-  }
 `;
 
 const RecommendedPostItem = styled.li`
