@@ -93,17 +93,6 @@ export const Header = () => {
           >
             About
           </NavTitle>
-          <NavTitle
-            className="header-title"
-            font="var(--Body-M)"
-            $isActive={headerMenu === "login"}
-            onClick={(e) => {
-              e.preventDefault();
-              navHandler("/login", "login");
-            }}
-          >
-            Login
-          </NavTitle>
           {userInfo && (
             <NavTitle
               className="header-title"
