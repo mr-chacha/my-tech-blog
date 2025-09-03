@@ -919,7 +919,7 @@ const ContentWrapper = styled.div`
   }
   h2 {
     font-size: 2rem;
-    line-height: 1.5rem;
+    line-height: 2.5rem;
     margin-top: 0.93em;
     margin-bottom: 0.93em;
   }

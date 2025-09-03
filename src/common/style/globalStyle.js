@@ -96,6 +96,7 @@ export const GlobalStyles = createGlobalStyle`
 
   html, body {
     height: 100%;
+    min-width: 445px !important;
   }
 
   html,

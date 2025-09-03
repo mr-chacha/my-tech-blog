@@ -141,7 +141,7 @@ export const Header = () => {
 };
 
 const HeaderContainer = styled.nav`
-  position: fixed;
+  /* position: fixed; */
   top: 0;
   z-index: 40;
   display: flex;
@@ -153,7 +153,7 @@ const HeaderContainer = styled.nav`
   background-color: var(--Back-Color);
   box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
   margin-top: 0;
-  min-width: 340px !important;
+  min-width: 445px !important;
   top: 0;
 
   @media print {

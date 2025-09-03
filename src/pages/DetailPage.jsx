@@ -701,7 +701,7 @@ const HeaderHr = styled.hr`
 `;
 
 const HeaderSection = styled.header`
-  margin-top: 7rem;
+  /* margin-top: 7rem; */
   text-align: center;
 `;
 
@@ -716,7 +716,7 @@ const DetailPageLayout = styled.div`
   padding-left: 1.25rem;
   padding-right: 1.25rem;
   color: var(--Text-Color);
-
+  margin: 30px;
   @media (min-width: 640px) {
     padding-left: 1.5rem;
     padding-right: 1.5rem;
