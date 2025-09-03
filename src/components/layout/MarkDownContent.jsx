@@ -155,12 +155,12 @@ const ContentWrapper = styled.div`
   }
 
   code {
-    background: #f1f5f9;
+    background: var(--Code-Back-Color);
     padding: 3px 6px;
     border-radius: 4px;
     font-size: 0.875rem;
     font-family: Monaco, Consolas, monospace;
-    color: var(--Back-Color);
+    color: var(--Text-Color);
   }
 
   pre {
@@ -176,6 +176,7 @@ const ContentWrapper = styled.div`
       padding: 0;
       font-family: Monaco, Consolas, monospace;
       font-size: 0.875rem;
+      color: var(--Text-Color);
     }
   }
 
