@@ -941,7 +941,7 @@ const ContentWrapper = styled.div`
     margin-bottom: 0.75rem;
     color: var(--Text-Color);
     white-space: pre-line;
-    line-height: 1rem;
+    line-height: 1.2rem;
   }
 
   li {
