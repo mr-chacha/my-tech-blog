@@ -406,7 +406,7 @@ const AdminButtonSection = styled.div`
   margin-top: 1rem;
 `;
 
-const EditButton = styled.button`
+const EditButton = styled.div`
   padding: 0.5rem 1rem;
   background-color: var(--Brand-Colors);
   color: white;
@@ -422,7 +422,7 @@ const EditButton = styled.button`
   }
 `;
 
-const DeleteButton = styled.button`
+const DeleteButton = styled.div`
   padding: 0.5rem 1rem;
   background-color: #ef4444;
   color: white;

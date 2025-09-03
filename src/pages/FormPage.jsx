@@ -1092,7 +1092,7 @@ const SaveButtonGroup = styled.div`
   gap: 0.5rem;
 `;
 
-const SaveButton = styled.button`
+const SaveButton = styled.div`
   padding: 0.5rem 1rem;
   background-color: #3b82f6;
   color: white;
@@ -1112,7 +1112,7 @@ const SaveButton = styled.button`
   }
 `;
 
-const ResetButton = styled.button`
+const ResetButton = styled.div`
   padding: 0.5rem 1rem;
   background-color: #6b7280;
   color: white;
