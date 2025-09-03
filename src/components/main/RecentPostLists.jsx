@@ -1,50 +1,20 @@
-import React, {useState} from "react";
+import React from "react";
 import styled from "styled-components";
 import reactIcon from "@public/image/png/reactIcon.png";
 import {useCustomNav} from "@/common/util";
-import {CalendarSVG, ClockSVG} from "@public/Icon";
+import {CalendarSVG} from "@public/Icon";
 
 export const RecentPostLists = ({recentPostLists}) => {
   // 날짜 포맷팅 함수
   const formatDate = (timestamp) => {
     if (!timestamp) return "";
 
-    // Firebase Timestamp 객체인 경우
-    if (timestamp.toDate) {
-      return timestamp
-        .toDate()
-        .toLocaleDateString("ko-KR", {
-          year: "numeric",
-          month: "2-digit",
-          day: "2-digit",
-        })
-        .replace(/\./g, "년 ")
-        .replace(/\s$/, "일");
-    }
+    const date = timestamp.toDate();
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
 
-    // 일반 Date 객체인 경우
-    if (timestamp instanceof Date) {
-      return timestamp
-        .toLocaleDateString("ko-KR", {
-          year: "numeric",
-          month: "2-digit",
-          day: "2-digit",
-        })
-        .replace(/\./g, "년 ")
-        .replace(/\s$/, "일");
-    }
-
-    return timestamp;
-  };
-
-  const calculateReadTime = (content) => {
-    if (!content) return "1분";
-
-    const wordsPerMinute = 200;
-    const wordCount = content.length / 2;
-    const readTime = Math.ceil(wordCount / wordsPerMinute);
-
-    return `${readTime}분`;
+    return `${year}년 ${month}월 ${day}일`;
   };
 
   const navHandler = useCustomNav();
@@ -80,12 +50,6 @@ export const RecentPostLists = ({recentPostLists}) => {
                   </CalendarIcon>
                   <span>{formatDate(latestPost.updatedAt || latestPost.createdAt)}</span>
                 </MetaItem>
-                <MetaItem>
-                  <ClockIcon>
-                    <ClockSVG />
-                  </ClockIcon>
-                  <span>{calculateReadTime(latestPost.content)}</span>
-                </MetaItem>
               </PostMeta>
             </PostContent>
           </LatestPostItem>
@@ -109,12 +73,6 @@ export const RecentPostLists = ({recentPostLists}) => {
                           <CalendarSVG />
                         </CalendarIcon>
                         <span>{formatDate(post.updatedAt || post.createdAt)}</span>
-                      </MetaItem>
-                      <MetaItem>
-                        <ClockIcon>
-                          <ClockSVG />
-                        </ClockIcon>
-                        <span>{calculateReadTime(post.content)}</span>
                       </MetaItem>
                     </PostMeta>
                   </RecommendedPostContent>
@@ -356,11 +314,6 @@ const RecommendedPostCard = styled.div`
   flex: 1;
   height: 100%;
   cursor: pointer;
-  @media (max-width: 980px) {
-    &:last-child {
-      display: none;
-    }
-  }
 `;
 
 const RecommendedPostItem = styled.li`

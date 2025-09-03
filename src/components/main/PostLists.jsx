@@ -247,7 +247,21 @@ const NoPostsMessage = styled.div`
   text-align: center;
   color: #6b7280;
 `;
-const PostListsSection = styled.section``;
+
+const PostListsSection = styled.section`
+  margin: 0 auto;
+  width: 100%;
+  max-width: 1200px;
+  padding: 0 1rem;
+
+  @media (min-width: 640px) {
+    padding: 0 1.5rem;
+  }
+
+  @media (min-width: 1024px) {
+    padding: 0 2rem;
+  }
+`;
 
 const PostGrid = styled.ul`
   display: grid;
@@ -256,6 +270,7 @@ const PostGrid = styled.ul`
   list-style: none;
   margin: 0;
   padding: 0;
+  width: 100%;
 
   @media (min-width: 640px) {
     grid-template-columns: repeat(2, 1fr);
@@ -267,6 +282,7 @@ const PostGrid = styled.ul`
   }
 
   @media (min-width: 1024px) {
+    grid-template-columns: repeat(4, 1fr);
     gap: 1.5rem;
   }
 `;

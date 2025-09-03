@@ -85,7 +85,6 @@ const ContentWrapper = styled.div`
   h4,
   h5,
   h6 {
-    line-height: 1.4rem;
     margin: 1rem 0 0.5rem 0;
     font-weight: bold;
     color: var(--Text-Color) !important;
@@ -99,7 +98,7 @@ const ContentWrapper = styled.div`
   }
   h2 {
     font-size: 2rem;
-    line-height: 1.5rem;
+    line-height: 2.5rem;
     margin-top: 0.93em;
     margin-bottom: 0.93em;
   }
@@ -121,7 +120,7 @@ const ContentWrapper = styled.div`
     margin-bottom: 0.75rem;
     color: var(--Text-Color) !important;
     white-space: pre-line;
-    line-height: 1rem;
+    line-height: 1.2rem;
   }
 
   li {
@@ -155,12 +154,12 @@ const ContentWrapper = styled.div`
   }
 
   code {
-    background: #f1f5f9;
+    background: var(--Code-Back-Color);
     padding: 3px 6px;
     border-radius: 4px;
     font-size: 0.875rem;
     font-family: Monaco, Consolas, monospace;
-    color: var(--Back-Color);
+    color: var(--Text-Color);
   }
 
   pre {
@@ -176,6 +175,7 @@ const ContentWrapper = styled.div`
       padding: 0;
       font-family: Monaco, Consolas, monospace;
       font-size: 0.875rem;
+      color: var(--Text-Color);
     }
   }
 

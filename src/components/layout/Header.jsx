@@ -93,17 +93,6 @@ export const Header = () => {
           >
             About
           </NavTitle>
-          <NavTitle
-            className="header-title"
-            font="var(--Body-M)"
-            $isActive={headerMenu === "login"}
-            onClick={(e) => {
-              e.preventDefault();
-              navHandler("/login", "login");
-            }}
-          >
-            Login
-          </NavTitle>
           {userInfo && (
             <NavTitle
               className="header-title"
@@ -152,7 +141,7 @@ export const Header = () => {
 };
 
 const HeaderContainer = styled.nav`
-  position: fixed;
+  /* position: fixed; */
   top: 0;
   z-index: 40;
   display: flex;
@@ -164,6 +153,7 @@ const HeaderContainer = styled.nav`
   background-color: var(--Back-Color);
   box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
   margin-top: 0;
+  min-width: 445px !important;
   top: 0;
 
   @media print {
@@ -201,7 +191,6 @@ const NavLinksContainer = styled.div`
 `;
 
 const NavTitle = styled.div`
-  font: var(--Body-B);
   border-radius: 9999px;
   padding: 0.25rem 1rem;
   display: flex;
@@ -209,17 +198,9 @@ const NavTitle = styled.div`
   justify-content: center;
   transition: all 0.2s ease;
   cursor: pointer;
-
-  color: var(--Text-Color);
-
-  ${(props) =>
-    props.$isActive &&
-    `
-    background-color: #f1f5f9;
-    color: #3b82f6;
-
-    
-  `}
+  background-color: ${(props) => (props.$isActive ? "#f1f5f9" : "transparent")};
+  color: ${(props) => (props.$isActive ? "#3b82f6" : "var(--Text-Color)")};
+  font: ${(props) => (props.$isActive ? "var(--Body-B)" : "var(--Body-M)")};
 `;
 
 const ActionsContainer = styled.div`

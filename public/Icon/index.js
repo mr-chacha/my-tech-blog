@@ -6,4 +6,3 @@ export * from "./CalendarSVG";
 export * from "./ScrollTopSVG";
 export * from "./ReplySVG";
 export * from "./LinkCopySVG";
-export * from "./ClockSVG";

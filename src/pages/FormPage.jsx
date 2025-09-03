@@ -31,6 +31,8 @@ export const FormPage = () => {
   const [categoryInput, setCategoryInput] = useState("");
   const [tempFiles, setTempFiles] = useState([]);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [bestImage, setBestImage] = useState("");
+  const [existingImages, setExistingImages] = useState([]);
 
   const [isEditMode, setIsEditMode] = useState(false);
   const [editPostId, setEditPostId] = useState(null);
@@ -49,6 +51,8 @@ export const FormPage = () => {
     setActiveTab([]);
     setTempFiles([]);
     setEditorContent("");
+    setBestImage("");
+    setExistingImages([]);
     if (editorViewRef.current) {
       editorViewRef.current.dispatch({
         changes: {
@@ -380,8 +384,8 @@ export const FormPage = () => {
       // base64 이미지들을 Firebase Storage에 업로드하고 URL 교체
       const {content: finalContent, files: uploadedFileInfos} = await uploadImage();
 
-      // 대표 이미지 설정 (첫 번째 업로드된 이미지이거나 수정시에는 content에서 첫 번째 이미지 추출)
-      let representativeImage = null;
+      // 대표 이미지 설정
+      let representativeImage = bestImage;
 
       if (uploadedFileInfos.length > 0) {
         representativeImage = uploadedFileInfos[0].url;
@@ -399,6 +403,7 @@ export const FormPage = () => {
         viewCount: 0,
         likeCount: 0,
         commentCount: 0,
+        bestImage: bestImage,
         image: representativeImage,
         isRecommended: false,
         file: uploadedFileInfos,
@@ -457,6 +462,11 @@ export const FormPage = () => {
       setCategory(postData.category || "");
       setActiveTab(postData.tags || []);
       setEditorContent(postData.content || "");
+      setBestImage(postData.bestImage || "");
+
+      // 기존 이미지들 추출
+      const extractedImages = extractImagesFromContent(postData.content || "");
+      setExistingImages(extractedImages);
 
       // 카테고리가 기본 목록에 없으면 직접입력으로 설정
       const categoryExists = CATEGORY_LIST.some((cat) => cat.value === postData.category);
@@ -590,6 +600,65 @@ export const FormPage = () => {
     return () => clearTimeout(timer);
   }, [userInfo]);
 
+  // 마크다운에서 이미지 URL들을 추출하는 함수
+  const extractImagesFromContent = (content) => {
+    const imageRegex = /!\[.*?\]\((https?:\/\/[^\s\)]+)\)/g;
+    const images = [];
+    let match;
+
+    while ((match = imageRegex.exec(content)) !== null) {
+      const imageUrl = match[1];
+      const altText = match[0].match(/!\[(.*?)\]/)?.[1] || "이미지";
+
+      // 중복 제거
+      if (!images.some((img) => img.url === imageUrl)) {
+        images.push({
+          id: `existing_${Date.now()}_${Math.random()}`,
+          url: imageUrl,
+          name: altText,
+          type: "existing",
+        });
+      }
+    }
+
+    return images;
+  };
+  // 대표이미지 선택 함수
+  const handleBestImageSelect = (imageUrl) => {
+    setBestImage(imageUrl);
+  };
+
+  // 업로드된 이미지 목록에서 대표이미지 선택 UI
+  const renderBestImageSelector = () => {
+    const allImages = [...existingImages, ...tempFiles];
+
+    if (allImages.length === 0) return null;
+
+    return (
+      <BestImageSelector>
+        <BestImageLabel>대표이미지 선택:</BestImageLabel>
+        <BestImageGrid>
+          {allImages.map((image, index) => {
+            const imageUrl = image.type === "existing" ? image.url : image.base64Url;
+            const imageName = image.type === "existing" ? image.name : image.name;
+
+            return (
+              <BestImageOption
+                key={image.id}
+                onClick={() => handleBestImageSelect(imageUrl)}
+                $isSelected={bestImage === imageUrl}
+              >
+                <BestImageThumbnail src={imageUrl} alt={imageName} />
+                <BestImageName>{imageName}</BestImageName>
+                {image.type === "existing" && <ExistingImageBadge>기존</ExistingImageBadge>}
+              </BestImageOption>
+            );
+          })}
+        </BestImageGrid>
+      </BestImageSelector>
+    );
+  };
+
   return (
     <FormLayout>
       <FormContainer
@@ -635,11 +704,15 @@ export const FormPage = () => {
               {/* 카테고리 직접입력 */}
               {category === "직접입력" && (
                 <CategoryInput
+                  value={categoryInput}
                   onChange={(e) => setCategoryInput(e.target.value)}
                   type="text"
                   placeholder="카테고리를 입력하세요"
                 />
               )}
+
+              {/* 대표이미지 선택 UI */}
+              {renderBestImageSelector()}
 
               {/* 태그 입력 */}
               <ActviveTagBox>
@@ -736,7 +809,6 @@ export const FormPage = () => {
 
         <RightSection>
           <PreviewContainer>
-            <div className="title-input">{title}</div>
             <ContentWrapper
               dangerouslySetInnerHTML={{
                 __html: convertMarkdownToHtml(editorContent),
@@ -748,6 +820,73 @@ export const FormPage = () => {
     </FormLayout>
   );
 };
+const ExistingImageBadge = styled.div`
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  background-color: #10b981;
+  color: white;
+  font-size: 0.625rem;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  font-weight: 600;
+`;
+
+const BestImageOption = styled.div`
+  position: relative; // 배지 위치를 위해 추가
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.5rem;
+  border: 2px solid ${(props) => (props.$isSelected ? "#3b82f6" : "#e5e7eb")};
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  background-color: ${(props) => (props.$isSelected ? "#eff6ff" : "transparent")};
+
+  &:hover {
+    border-color: #3b82f6;
+    background-color: #eff6ff;
+  }
+`;
+const BestImageSelector = styled.div`
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background-color: var(--Back-Color);
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+`;
+
+const BestImageLabel = styled.div`
+  font: var(--Title-R);
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: var(--Text-Color);
+`;
+
+const BestImageGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 0.75rem;
+`;
+
+const BestImageThumbnail = styled.img`
+  width: 100%;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 0.25rem;
+  margin-bottom: 0.5rem;
+`;
+
+const BestImageName = styled.div`
+  font-size: 0.75rem;
+  color: var(--Text-Color);
+  text-align: center;
+  word-break: break-word;
+  line-height: 1.2;
+`;
+
 const ContentWrapper = styled.div`
   font-weight: 400;
   line-height: 1rem;
@@ -780,7 +919,7 @@ const ContentWrapper = styled.div`
   }
   h2 {
     font-size: 2rem;
-    line-height: 1.5rem;
+    line-height: 2.5rem;
     margin-top: 0.93em;
     margin-bottom: 0.93em;
   }
@@ -802,7 +941,7 @@ const ContentWrapper = styled.div`
     margin-bottom: 0.75rem;
     color: var(--Text-Color);
     white-space: pre-line;
-    line-height: 1rem;
+    line-height: 1.2rem;
   }
 
   li {
@@ -953,7 +1092,7 @@ const SaveButtonGroup = styled.div`
   gap: 0.5rem;
 `;
 
-const SaveButton = styled.button`
+const SaveButton = styled.div`
   padding: 0.5rem 1rem;
   background-color: #3b82f6;
   color: white;
@@ -973,7 +1112,7 @@ const SaveButton = styled.button`
   }
 `;
 
-const ResetButton = styled.button`
+const ResetButton = styled.div`
   padding: 0.5rem 1rem;
   background-color: #6b7280;
   color: white;

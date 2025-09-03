@@ -69,7 +69,6 @@ function AppContent() {
             <OneButtonModal />
             <TwoButtonModal />
           </Layout>
-
           <Footer />
         </>
       )}
@@ -86,9 +85,8 @@ function App() {
 }
 
 const Layout = styled.main`
-  margin: 60px auto 0px;
+  margin: 0px auto 0px;
   max-width: ${(props) => (props?.$layout ? "100%" : "1200px")};
-  margin-top: 64px;
   background-color: var(--Back-Color);
 `;
 export default App;

@@ -39,7 +39,8 @@ export const GlobalStyles = createGlobalStyle`
     --Dark:#000000;
 
     // Back Colors
-    --Content-Back-Color:${(props) => (props.isDarkMode ? "#111827" : "#fbfdfc")};
+
+    --Code-Back-Color:${(props) => (props.isDarkMode ? "#111827" : "#f1f5f9")};
     --Back-Color:${(props) => (props.isDarkMode ? "var(--Dark)" : "var(--Light)")};
     --Text-Color:${(props) => (props.isDarkMode ? "var(--Light)" : "var(--Dark)")};
     --Border-Color :${(props) => (props.isDarkMode ? "rgb(51 65 85)" : "rgb(209 213 219)")};
@@ -95,6 +96,7 @@ export const GlobalStyles = createGlobalStyle`
 
   html, body {
     height: 100%;
+    min-width: 445px !important;
   }
 
   html,

@@ -139,7 +139,15 @@ export const DetailPage = () => {
 
     while ((match = headingRegex.exec(markdownContent)) !== null) {
       const level = match[1].length;
-      const title = match[2].trim();
+      let title = match[2].trim();
+
+      // 타이틀에 이미지 url 제거
+      title = title.replace(/!\[[^\]]*\]\([^)]*\)/g, "");
+      title = title.replace(/\[([^\]]*)\]\([^)]*\)/g, "$1");
+      title = title.replace(/\*\*([^*]+)\*\*/g, "$1");
+      title = title.replace(/\*([^*]+)\*/g, "$1");
+      title = title.replace(/`([^`]+)`/g, "$1");
+      title = title.trim();
 
       const baseId = title
         .toLowerCase()
@@ -387,10 +395,46 @@ export const DetailPage = () => {
         </SidebarLayout>
         <MarkDownContent content={detailPost?.content} tempFiles={[]} isPreview={false} />
       </DetailBodySection>
+
+      <TopButton onClick={scrollToTop} title="맨 위로">
+        Top
+      </TopButton>
     </DetailPageLayout>
   );
 };
+const TopButton = styled.div`
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1000;
+  width: 50px;
+  height: 50px;
+  background-color: var(--Brand-Colors);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 
+  &:hover {
+    background-color: #2563eb;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+  }
+
+  svg {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
+  }
+
+  @media (min-width: 1280px) {
+    display: none;
+  }
+`;
 const AdminButtonSection = styled.div`
   display: flex;
   gap: 0.75rem;
@@ -398,7 +442,7 @@ const AdminButtonSection = styled.div`
   margin-top: 1rem;
 `;
 
-const EditButton = styled.button`
+const EditButton = styled.div`
   padding: 0.5rem 1rem;
   background-color: var(--Brand-Colors);
   color: white;
@@ -414,7 +458,7 @@ const EditButton = styled.button`
   }
 `;
 
-const DeleteButton = styled.button`
+const DeleteButton = styled.div`
   padding: 0.5rem 1rem;
   background-color: #ef4444;
   color: white;
@@ -657,7 +701,7 @@ const HeaderHr = styled.hr`
 `;
 
 const HeaderSection = styled.header`
-  margin-top: 7rem;
+  /* margin-top: 7rem; */
   text-align: center;
 `;
 
@@ -672,7 +716,7 @@ const DetailPageLayout = styled.div`
   padding-left: 1.25rem;
   padding-right: 1.25rem;
   color: var(--Text-Color);
-
+  margin: 30px;
   @media (min-width: 640px) {
     padding-left: 1.5rem;
     padding-right: 1.5rem;
