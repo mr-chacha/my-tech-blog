@@ -395,10 +395,46 @@ export const DetailPage = () => {
         </SidebarLayout>
         <MarkDownContent content={detailPost?.content} tempFiles={[]} isPreview={false} />
       </DetailBodySection>
+
+      <TopButton onClick={scrollToTop} title="맨 위로">
+        Top
+      </TopButton>
     </DetailPageLayout>
   );
 };
+const TopButton = styled.div`
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1000;
+  width: 50px;
+  height: 50px;
+  background-color: var(--Brand-Colors);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 
+  &:hover {
+    background-color: #2563eb;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+  }
+
+  svg {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
+  }
+
+  @media (min-width: 1280px) {
+    display: none;
+  }
+`;
 const AdminButtonSection = styled.div`
   display: flex;
   gap: 0.75rem;
