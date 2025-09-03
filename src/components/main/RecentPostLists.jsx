@@ -9,32 +9,12 @@ export const RecentPostLists = ({recentPostLists}) => {
   const formatDate = (timestamp) => {
     if (!timestamp) return "";
 
-    // Firebase Timestamp 객체인 경우
-    if (timestamp.toDate) {
-      return timestamp
-        .toDate()
-        .toLocaleDateString("ko-KR", {
-          year: "numeric",
-          month: "2-digit",
-          day: "2-digit",
-        })
-        .replace(/\./g, "년 ")
-        .replace(/\s$/, "일");
-    }
+    const date = timestamp.toDate();
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
 
-    // 일반 Date 객체인 경우
-    if (timestamp instanceof Date) {
-      return timestamp
-        .toLocaleDateString("ko-KR", {
-          year: "numeric",
-          month: "2-digit",
-          day: "2-digit",
-        })
-        .replace(/\./g, "년 ")
-        .replace(/\s$/, "일");
-    }
-
-    return timestamp;
+    return `${year}년 ${month}월 ${day}일`;
   };
 
   const navHandler = useCustomNav();
