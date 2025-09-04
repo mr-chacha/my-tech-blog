@@ -84,7 +84,7 @@ function App() {
   );
 }
 
-const Layout = styled.main`
+const Layout = styled.div`
   margin: 0px auto 0px;
   max-width: ${(props) => (props?.$layout ? "100%" : "1200px")};
   background-color: var(--Back-Color);
