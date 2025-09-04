@@ -11,6 +11,7 @@ import {useZustandStore} from "@/common/store";
 import React, {useState, useEffect} from "react";
 import {CalendarSVG, LinkCopySVG, ReplySVG, ScrollTopSVG} from "@public/Icon";
 import {MarkDownContent} from "@/components/layout";
+import {GitHubComment} from "@/components/detail";
 
 export const DetailPage = () => {
   const {detailId} = useParams();
@@ -395,6 +396,9 @@ export const DetailPage = () => {
         </SidebarLayout>
         <MarkDownContent content={detailPost?.content} tempFiles={[]} isPreview={false} />
       </DetailBodySection>
+
+      {/* GitHub 댓글 컴포넌트 추가 */}
+      <GitHubComment postId={detailId} postTitle={detailPost?.title} />
 
       <TopButton onClick={scrollToTop} title="맨 위로">
         Top
