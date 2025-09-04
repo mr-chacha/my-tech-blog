@@ -63,6 +63,8 @@ export const GlobalStyles = createGlobalStyle`
     --Caption-M: 500 ${pxRem(12)}/150% Pretendard;
 
 
+ 
+
 
     h1{
       font: var(--Large-Title);
@@ -93,6 +95,27 @@ export const GlobalStyles = createGlobalStyle`
     background: #555; /* 마우스 오버 시 색상 */
    }
   }
+
+
+  .giscus {
+    margin-top: 1rem !important;
+    width: 100% !important;
+    max-width: 1200px !important;
+    margin: 0 auto !important;
+    background-color: #000 !important;
+    padding: 20px;
+    
+  }
+
+/* 수정 후 */
+.color-fg-default, 
+.color-text-primary, 
+.link-primary,
+a.color-text-primary,
+a[class*="color-text-primary"],
+a[href*="github.com"][class*="color-text-primary"] {
+  color: var(--Text-Color) !important;
+}
 
   html, body {
     height: 100%;
