@@ -1,7 +1,28 @@
 import React from "react";
 import styled from "styled-components";
 import reactIcon from "@public/image/png/reactIcon.png";
+import {useZustandStore} from "@/common/store";
 export const AboutPage = () => {
+  const {setActiveModal, setModalMessage} = useZustandStore();
+  const handleEmailCopy = async () => {
+    try {
+      await navigator.clipboard.writeText("hoitcha@gmail.com");
+
+      setActiveModal({oneButtonModal: true});
+      setModalMessage({
+        topMessage: "이메일이 복사 성공",
+        bottomMessage: "hoitchac@gmail.com가 복사 되었습니다",
+      });
+    } catch (err) {
+      console.error("복사 실패:", err);
+      setActiveModal({oneButtonModal: true});
+      setModalMessage({
+        topMessage: "이메일이 복사 실패",
+        bottomMessage: "이메일 : hoitchac@gmail.com",
+      });
+    }
+  };
+
   return (
     <Container>
       <FlexContainer>
@@ -30,7 +51,7 @@ export const AboutPage = () => {
                   <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"></path>
                 </LinkedInIcon>
               </SocialButton>
-              <EmailButton type="button">
+              <EmailButton type="button" onClick={handleEmailCopy}>
                 <MailIcon>
                   <rect width="20" height="16" x="2" y="4" rx="2"></rect>
                   <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>

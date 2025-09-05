@@ -8,7 +8,7 @@ import ReactMarkdown from "react-markdown";
 import {useNavigate} from "react-router-dom";
 import {formatTimestamp} from "@/common/util";
 import {useZustandStore} from "@/common/store";
-import React, {useState, useEffect} from "react";
+import React, {useState, useEffect, useRef} from "react";
 import {CalendarSVG, LinkCopySVG, ReplySVG, ScrollTopSVG} from "@public/Icon";
 import {MarkDownContent} from "@/components/layout";
 import {GitHubComment} from "@/components/detail";
@@ -117,7 +117,12 @@ export const DetailPage = () => {
   };
 
   const handleComment = () => {
-    console.log("댓글 기능");
+    const maxScroll = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
+
+    window.scrollTo({
+      top: maxScroll,
+      behavior: "smooth",
+    });
   };
 
   const handleCopy = async () => {

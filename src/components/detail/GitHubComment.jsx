@@ -1,5 +1,5 @@
-import React, {useEffect, useRef} from "react";
 import styled from "styled-components";
+import React, {useEffect, useRef} from "react";
 
 export const GitHubComment = ({postId, postTitle}) => {
   const commentRef = useRef(null);
@@ -64,7 +64,6 @@ export const GitHubComment = ({postId, postTitle}) => {
         // body의 마지막 자식인지 확인 (footer 밖에 있는 경우)
         if (element.parentNode === document.body) {
           container.appendChild(element);
-          console.log("Giscus moved to container");
         }
       });
     };
