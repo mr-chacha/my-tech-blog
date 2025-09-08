@@ -4,8 +4,19 @@ import React, {useEffect, useState} from "react";
 import {useZustandStore} from "@/common/store";
 import {PostLists, RecentPostLists} from "@/components/main";
 import {collection, getDocs, orderBy, query} from "firebase/firestore";
+import {useSEO, getCurrentURL} from "@/common/seo";
 
 export const MainPage = () => {
+  useSEO({
+    title: "홈",
+    description:
+      "프론트엔드 개발자 차차의 기술 블로그입니다. React, JavaScript, TypeScript, CSS 등 웹 개발 관련 최신 포스트를 확인하세요.",
+    keywords: "개발블로그, React, JavaScript, TypeScript, CSS, 프론트엔드, 웹개발, 차차",
+    image: "https://chacha-dev.com/image/png/chacha-dev.png",
+    url: getCurrentURL(),
+    type: "website",
+  });
+
   const {setIsLoading} = useZustandStore();
 
   const [recentPostLists, setRecentPostLists] = useState([]);

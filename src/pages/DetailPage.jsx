@@ -1,17 +1,14 @@
-import remarkGfm from "remark-gfm";
-import rehypeSlug from "rehype-slug";
 import styled from "styled-components";
-import remarkBreaks from "remark-breaks";
 import {useBlogApis} from "@/common/apis";
 import {useParams} from "react-router-dom";
-import ReactMarkdown from "react-markdown";
 import {useNavigate} from "react-router-dom";
 import {formatTimestamp} from "@/common/util";
 import {useZustandStore} from "@/common/store";
 import React, {useState, useEffect} from "react";
-import {CalendarSVG, LinkCopySVG, ReplySVG, ScrollTopSVG} from "@public/Icon";
-import {MarkDownContent} from "@/components/layout";
 import {GitHubComment} from "@/components/detail";
+import {MarkDownContent} from "@/components/layout";
+import {CalendarSVG, LinkCopySVG, ReplySVG, ScrollTopSVG} from "@public/Icon";
+import {useSEO, truncateDescription, generateSEOKeywords, getCurrentURL} from "@/common/seo";
 
 export const DetailPage = () => {
   const {detailId} = useParams();
@@ -24,7 +21,18 @@ export const DetailPage = () => {
   const [tocItems, setTocItems] = useState([]);
   // toc 활성화 상태
   const [activeId, setActiveId] = useState("");
-  const [isScrollingToTarget, setIsScrollingToTarget] = useState(false); // 추가
+  const [isScrollingToTarget, setIsScrollingToTarget] = useState(false);
+
+  useSEO({
+    title: detailPost?.title,
+    description: detailPost?.content ? truncateDescription(detailPost.content) : "",
+    keywords: detailPost ? generateSEOKeywords(detailPost.category, detailPost.tags) : "",
+    image: detailPost?.image || detailPost?.bestImage || "https://chacha-dev.com/image/png/chacha-dev.png",
+    url: getCurrentURL(),
+    type: "article",
+    publishedTime: detailPost?.createdAt?.toDate?.()?.toISOString(),
+    modifiedTime: detailPost?.updatedAt?.toDate?.()?.toISOString(),
+  });
 
   // 사이드바 링크 클릭 시 해당 섹션으로 스크롤
   const handleTocClick = (e, href) => {
@@ -117,7 +125,12 @@ export const DetailPage = () => {
   };
 
   const handleComment = () => {
-    console.log("댓글 기능");
+    const maxScroll = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
+
+    window.scrollTo({
+      top: maxScroll,
+      behavior: "smooth",
+    });
   };
 
   const handleCopy = async () => {
