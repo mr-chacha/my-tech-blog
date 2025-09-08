@@ -24,10 +24,10 @@ export const DetailPage = () => {
   const [isScrollingToTarget, setIsScrollingToTarget] = useState(false);
 
   useSEO({
-    title: detailPost?.title,
+    title: `${detailPost?.title}의 상세 포스트`,
     description: detailPost?.content ? truncateDescription(detailPost.content) : "",
     keywords: detailPost ? generateSEOKeywords(detailPost.category, detailPost.tags) : "",
-    image: detailPost?.image || detailPost?.bestImage || "https://chacha-dev.com/image/png/chacha-dev.png",
+    image: detailPost?.image || detailPost?.bestImage || "https://chacha-dev.com/chacha-dev.png",
     url: getCurrentURL(),
     type: "article",
     publishedTime: detailPost?.createdAt?.toDate?.()?.toISOString(),

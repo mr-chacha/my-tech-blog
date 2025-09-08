@@ -1,8 +1,19 @@
 import React from "react";
 import styled from "styled-components";
-import reactIcon from "@public/image/png/reactIcon.png";
 import {useZustandStore} from "@/common/store";
+import defaultImage from "@public/chacha-dev.png";
+import {getCurrentURL, useSEO} from "@/common/seo";
+
 export const AboutPage = () => {
+  useSEO({
+    title: "어바웃 차차",
+    description: "프론트엔드 개발자 차차의 기술 블로그입니다",
+    keywords: "개발블로그, React, JavaScript, TypeScript, CSS, 프론트엔드, 웹개발, 차차",
+    image: "https://chacha-dev.com/chacha-dev.png",
+    url: getCurrentURL(),
+    type: "website",
+  });
+
   const {setActiveModal, setModalMessage} = useZustandStore();
   const handleEmailCopy = async () => {
     try {
@@ -63,7 +74,7 @@ export const AboutPage = () => {
             </PrintEmailInfo>
           </ProfileInfo>
           <ProfileImage>
-            <img alt="이미지" src={reactIcon} />
+            <img alt="이미지" src={defaultImage} />
           </ProfileImage>
         </ProfileSection>
         <AboutSection>
