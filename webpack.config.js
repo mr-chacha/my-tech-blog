@@ -1,5 +1,6 @@
 const DotenvWebpack = require("dotenv-webpack");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
+const CopyWebpackPlugin = require("copy-webpack-plugin");
 const path = require("path");
 
 module.exports = {
@@ -38,11 +39,21 @@ module.exports = {
     new HtmlWebpackPlugin({
       template: "./public/index.html",
     }),
-    // ✅ 항상 환경변수 로드 (프로덕션에서도!)
+    new CopyWebpackPlugin({
+      patterns: [
+        {
+          from: "public",
+          to: ".",
+          globOptions: {
+            ignore: ["**/index.html"],
+          },
+        },
+      ],
+    }),
     new DotenvWebpack({
       path: ".env",
       systemvars: true,
-      safe: false, // .env 파일이 없어도 에러 안남
+      safe: false,
     }),
   ],
   devServer: {

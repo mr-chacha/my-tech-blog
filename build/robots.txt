@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+# 사이트맵 위치
+Sitemap: https://chacha-dev.com/sitemap.xml
+
+# 크롤링 제외할 경로 (관리자 페이지 등)
+Disallow: /form
+Disallow: /login
