@@ -1,7 +1,7 @@
 import React, {useState} from "react";
 import styled from "styled-components";
 import {useCustomNav} from "@/common/util";
-import reactIcon from "@public/image/png/reactIcon.png";
+import defaultImage from "@public/chacha-dev.png";
 
 export const PostLists = ({postLists}) => {
   const navHandler = useCustomNav();
@@ -172,10 +172,10 @@ export const PostLists = ({postLists}) => {
               <PostCard>
                 <ImageContainer>
                   <PostImage
-                    src={post.image || reactIcon}
+                    src={post.image || defaultImage}
                     alt={`thumbnail for ${post.title || "게시물"}`}
                     onError={(e) => {
-                      e.target.src = reactIcon;
+                      e.target.src = defaultImage;
                     }}
                   />
                 </ImageContainer>

@@ -1,8 +1,8 @@
 import React from "react";
 import styled from "styled-components";
-import reactIcon from "@public/image/png/reactIcon.png";
-import {useCustomNav} from "@/common/util";
 import {CalendarSVG} from "@public/Icon";
+import {useCustomNav} from "@/common/util";
+import defaultImage from "@public/chacha-dev.png";
 
 export const RecentPostLists = ({recentPostLists}) => {
   // 날짜 포맷팅 함수
@@ -30,10 +30,10 @@ export const RecentPostLists = ({recentPostLists}) => {
             <ImageContainer>
               {latestPost.isRecommended && <RecommendedBadge>추천</RecommendedBadge>}
               <PostImage
-                src={latestPost.image || reactIcon}
+                src={latestPost.image || defaultImage}
                 alt="thumbnail"
                 onError={(e) => {
-                  e.target.src = reactIcon;
+                  e.target.src = defaultImage;
                 }}
               />
             </ImageContainer>
