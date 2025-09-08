@@ -14,7 +14,6 @@ export const useSEO = ({
   useEffect(() => {
     if (!title && type === "article") return;
 
-    // 페이지 제목 설정
     if (title) {
       document.title = `${title} | 차차의 개발블로그`;
     }
