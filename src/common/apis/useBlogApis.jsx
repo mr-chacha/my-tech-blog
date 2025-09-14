@@ -1,5 +1,5 @@
-import {auth, db, storage} from "@/server/firebase";
-import {ref, uploadBytes, getDownloadURL} from "firebase/storage";
+import {auth, db} from "@/server/firebase";
+import {uploadToS3} from "@/server/aws-s3";
 import {doc, getDoc, collection, addDoc, deleteDoc, updateDoc} from "firebase/firestore";
 import {GithubAuthProvider, signInWithPopup, signOut} from "firebase/auth";
 
@@ -36,11 +36,33 @@ export const useBlogApis = () => {
   };
 
   // 포스트 이미지 등록
+  // const postImage = async (fileName, tempFile) => {
+  //   const storageRef = ref(storage, fileName);
+  //   const snapshot = await uploadBytes(storageRef, tempFile.file);
+  //   const downloadURL = await getDownloadURL(snapshot.ref);
+  //   return downloadURL;
+  // };
+
+  // // 포스트 삭제
+  // const deletePost = async (postId) => {
+  //   const postRef = doc(db, "posts", postId);
+  //   await deleteDoc(postRef);
+  // };
+
+  // // 포스트 수정
+  // const updatePost = async (postId, updateData) => {
+  //   const postRef = doc(db, "posts", postId);
+  //   await updateDoc(postRef, updateData);
+  // };
+
   const postImage = async (fileName, tempFile) => {
-    const storageRef = ref(storage, fileName);
-    const snapshot = await uploadBytes(storageRef, tempFile.file);
-    const downloadURL = await getDownloadURL(snapshot.ref);
-    return downloadURL;
+    try {
+      const downloadURL = await uploadToS3(fileName, tempFile.file);
+      return downloadURL;
+    } catch (error) {
+      console.error("이미지 업로드 실패:", error);
+      throw error;
+    }
   };
 
   // 포스트 삭제

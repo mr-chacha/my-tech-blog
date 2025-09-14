@@ -160,6 +160,7 @@ const ContentWrapper = styled.div`
     font-size: 0.875rem;
     font-family: Monaco, Consolas, monospace;
     color: var(--Text-Color);
+    line-height: 1.5;
   }
 
   pre {
@@ -176,6 +177,7 @@ const ContentWrapper = styled.div`
       font-family: Monaco, Consolas, monospace;
       font-size: 0.875rem;
       color: var(--Text-Color);
+      line-height: 1.5;
     }
   }
 

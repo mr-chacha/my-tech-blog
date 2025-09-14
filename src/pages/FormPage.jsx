@@ -1003,6 +1003,7 @@ const ContentWrapper = styled.div`
     font-size: 0.875rem;
     font-family: Monaco, Consolas, monospace;
     color: var(--Back-Color);
+    line-height: 1.5;
   }
 
   pre {
@@ -1018,6 +1019,7 @@ const ContentWrapper = styled.div`
       padding: 0;
       font-family: Monaco, Consolas, monospace;
       font-size: 0.875rem;
+      line-height: 1.5;
     }
   }
 
@@ -1343,6 +1345,7 @@ const FormEditorContainer = styled.div`
   overflow: hidden;
   code {
     background-color: var(--Text-Color) !important;
+    line-height: 1.5;
   }
 
   .ͼ1 .cm-gutter {
@@ -1376,5 +1379,6 @@ const PreviewContainer = styled.div`
   }
   code {
     color: var(--Text-Color) !important;
+    line-height: 1.5;
   }
 `;
