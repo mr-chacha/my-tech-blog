@@ -2,16 +2,16 @@ import AWS from "aws-sdk";
 
 // AWS SDK 설정
 AWS.config.update({
-  accessKeyId: process.env.REACT_APP_AWS_ACCESS_KEY_ID,
-  secretAccessKey: process.env.REACT_APP_AWS_SECRET_ACCESS_KEY,
-  region: process.env.REACT_APP_AWS_REGION,
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  region: process.env.AWS_REGION,
 });
 
 const s3 = new AWS.S3();
 
 export const uploadToS3 = async (fileName, file) => {
   const uploadParams = {
-    Bucket: process.env.REACT_APP_AWS_BUCKET_NAME,
+    Bucket: process.env.AWS_BUCKET_NAME,
     Key: fileName,
     Body: file,
     ContentType: file.type,
@@ -30,7 +30,7 @@ export const uploadToS3 = async (fileName, file) => {
 
 export const deleteFromS3 = async (fileName) => {
   const deleteParams = {
-    Bucket: process.env.REACT_APP_AWS_BUCKET_NAME,
+    Bucket: process.env.AWS_BUCKET_NAME,
     Key: fileName,
   };
 

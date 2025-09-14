@@ -5,6 +5,7 @@ import {useZustandStore} from "@/common/store";
 import {PostLists, RecentPostLists} from "@/components/main";
 import {collection, getDocs, orderBy, query} from "firebase/firestore";
 import {useSEO, getCurrentURL} from "@/common/seo";
+import {useBlogApis} from "@/common/apis";
 
 export const MainPage = () => {
   // 메인 페이지 SEO 최적화
@@ -17,30 +18,29 @@ export const MainPage = () => {
     type: "website",
   });
 
+  const {fetchPosts} = useBlogApis();
   const {setIsLoading} = useZustandStore();
 
   const [recentPostLists, setRecentPostLists] = useState([]);
   const [postLists, setPostLists] = useState([]);
+
   const fetchPostData = async () => {
     try {
       setIsLoading(true);
-      const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
 
-      const postData = await getDocs(q);
-      const postList = postData.docs.map((doc) => ({id: doc.id, ...doc.data()}));
+      // Express API 호출
+      const response = await fetchPosts();
 
-      if (postList.length > 5) {
-        // 최신 5개
-        setRecentPostLists(postList.slice(0, 5));
-        setPostLists(postList.slice(5));
+      if (response.success) {
+        setRecentPostLists(response.data.recentPosts);
+        setPostLists(response.data.olderPosts);
       } else {
-        // 5개 이하면 모두 최신 포스트로
-        setRecentPostLists(postList);
+        console.error("포스트 데이터 가져오기 실패:", response.message);
+        setRecentPostLists([]);
         setPostLists([]);
       }
     } catch (error) {
-      console.error("포스트 데이터 가져오기 실패:", error);
-
+      console.error("API 호출 실패:", error);
       setRecentPostLists([]);
       setPostLists([]);
     } finally {

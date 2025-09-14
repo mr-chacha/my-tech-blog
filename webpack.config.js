@@ -62,6 +62,14 @@ module.exports = {
     open: true,
     hot: true,
     historyApiFallback: true,
+    proxy: [
+      {
+        context: ["/api"],
+        target: "http://localhost:5001",
+        changeOrigin: true,
+        secure: false,
+      },
+    ],
   },
   mode: "production",
 };

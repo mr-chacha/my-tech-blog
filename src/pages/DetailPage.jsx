@@ -196,7 +196,7 @@ export const DetailPage = () => {
   const getDetailPost = async (detailId) => {
     try {
       const response = await fetchDetailPost(detailId);
-      setDetailPost(response);
+      setDetailPost(response.data);
 
       const contentToc = tocFromMarkdown(response.content);
       setTocItems(contentToc);
