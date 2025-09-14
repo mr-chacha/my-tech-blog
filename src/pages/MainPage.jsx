@@ -7,6 +7,7 @@ import {collection, getDocs, orderBy, query} from "firebase/firestore";
 import {useSEO, getCurrentURL} from "@/common/seo";
 
 export const MainPage = () => {
+  // 메인 페이지 SEO 최적화
   useSEO({
     title: "홈",
     description: "프론트엔드 개발자 차차의 기술 블로그입니다",

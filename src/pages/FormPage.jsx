@@ -833,7 +833,7 @@ const ExistingImageBadge = styled.div`
 `;
 
 const BestImageOption = styled.div`
-  position: relative; // 배지 위치를 위해 추가
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -843,6 +843,8 @@ const BestImageOption = styled.div`
   cursor: pointer;
   transition: all 0.2s;
   background-color: ${(props) => (props.$isSelected ? "#eff6ff" : "transparent")};
+  min-width: 120px; // 최소 너비 설정으로 아이템이 찌그러지지 않도록 함
+  flex-shrink: 0; // flex 아이템이 줄어들지 않도록 함
 
   &:hover {
     border-color: #3b82f6;
@@ -866,9 +868,29 @@ const BestImageLabel = styled.div`
 `;
 
 const BestImageGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  display: flex;
   gap: 0.75rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+
+  /* 스크롤바 스타일링 */
+  &::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+  }
 `;
 
 const BestImageThumbnail = styled.img`
@@ -981,6 +1003,7 @@ const ContentWrapper = styled.div`
     font-size: 0.875rem;
     font-family: Monaco, Consolas, monospace;
     color: var(--Back-Color);
+    line-height: 1.5;
   }
 
   pre {
@@ -996,6 +1019,7 @@ const ContentWrapper = styled.div`
       padding: 0;
       font-family: Monaco, Consolas, monospace;
       font-size: 0.875rem;
+      line-height: 1.5;
     }
   }
 
@@ -1321,6 +1345,7 @@ const FormEditorContainer = styled.div`
   overflow: hidden;
   code {
     background-color: var(--Text-Color) !important;
+    line-height: 1.5;
   }
 
   .ͼ1 .cm-gutter {
@@ -1354,5 +1379,6 @@ const PreviewContainer = styled.div`
   }
   code {
     color: var(--Text-Color) !important;
+    line-height: 1.5;
   }
 `;
