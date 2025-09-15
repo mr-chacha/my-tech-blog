@@ -23,7 +23,7 @@ export const FormPage = () => {
   const location = useLocation();
   const {userInfo, setActiveModal, setModalMessage, setModalConfirmHandler, isLoading, setIsLoading} =
     useZustandStore();
-  const {postImage, postPost, fetchDetailPost, updatePost} = useBlogApis();
+  const {postImage, createPost, fetchDetailPost, updatePost} = useBlogApis();
   const [title, setTitle] = useState("");
   const [activeTab, setActiveTab] = useState([]);
   const [editorContent, setEditorContent] = useState("");
@@ -398,8 +398,6 @@ export const FormPage = () => {
         title: title.trim(),
         content: finalContent,
         category: category === "직접입력" ? categoryInput : category.trim(),
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
         viewCount: 0,
         likeCount: 0,
         commentCount: 0,
@@ -415,14 +413,23 @@ export const FormPage = () => {
 
       // 수정 모드와 등록 모드 구분
       if (isEditMode && editPostId) {
-        await updatePost(editPostId, postData);
-        nav(`/post/${editPostId}`);
+        const response = await updatePost(editPostId, postData);
+
+        if (response.success) {
+          nav(`/post/${editPostId}`);
+        } else {
+          throw new Error(response.message);
+        }
       } else {
-        // 등록 모드: 새로운 포스트 생성
-        postData.createdAt = serverTimestamp();
-        const response = await postPost("posts", postData);
-        nav(`/post/${response.id}`);
+        // 새로운 포스트 생성
+
+        const response = await createPost(postData);
+        console.log("res", response);
+        if (response.data) {
+          nav(`/post/${response.data.id}`);
+        }
       }
+
       setActiveModal({
         twoButtonModal: false,
       });
@@ -430,16 +437,14 @@ export const FormPage = () => {
       // 폼 초기화
       resetForm();
     } catch (error) {
+      setModalConfirmHandler(null);
+
       setActiveModal({
-        twoButtonModal: true,
+        oneButtonModal: true,
+        twoButtonModal: false,
       });
       setModalMessage({
         topMessage: "포스트 저장에 실패했습니다.",
-      });
-      setModalConfirmHandler(() => () => {
-        setActiveModal({
-          twoButtonModal: false,
-        });
       });
     } finally {
       setIsLoading(false);
@@ -451,37 +456,37 @@ export const FormPage = () => {
     breaks: true,
   });
 
-  // 수정 포스트 조회
-  const loadPostForEdit = async (postId) => {
+  // 수정 포스트 조회 API
+  const getEditPost = async (postId) => {
     try {
       setIsLoading(true);
-      const postData = await fetchDetailPost(postId);
+      const response = await fetchDetailPost(postId);
 
       // 폼에 기존 데이터 설정
-      setTitle(postData.title || "");
-      setCategory(postData.category || "");
-      setActiveTab(postData.tags || []);
-      setEditorContent(postData.content || "");
-      setBestImage(postData.bestImage || "");
+      setTitle(response.data.title || "");
+      setCategory(response.data.category || "");
+      setActiveTab(response.data.tags || []);
+      setEditorContent(response.data.content || "");
+      setBestImage(response.data.bestImage || "");
 
       // 기존 이미지들 추출
-      const extractedImages = extractImagesFromContent(postData.content || "");
+      const extractedImages = extractImagesFromContent(response.data.content || "");
       setExistingImages(extractedImages);
 
       // 카테고리가 기본 목록에 없으면 직접입력으로 설정
-      const categoryExists = CATEGORY_LIST.some((cat) => cat.value === postData.category);
+      const categoryExists = CATEGORY_LIST.some((cat) => cat.value === response.data.category);
       if (!categoryExists && postData.category) {
         setCategory("직접입력");
-        setCategoryInput(postData.category);
+        setCategoryInput(response.data.category);
       }
 
       setTimeout(() => {
-        if (editorViewRef.current && postData.content) {
+        if (editorViewRef.current && response.data.content) {
           editorViewRef.current.dispatch({
             changes: {
               from: 0,
               to: editorViewRef.current.state.doc.length,
-              insert: postData.content,
+              insert: response.data.content,
             },
           });
         }
@@ -514,7 +519,7 @@ export const FormPage = () => {
     if (postId) {
       setIsEditMode(true);
       setEditPostId(postId);
-      loadPostForEdit(postId);
+      getEditPost(postId);
       setIsLoading(false);
     }
   }, [location.search]);

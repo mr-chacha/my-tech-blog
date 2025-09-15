@@ -2,7 +2,6 @@ import styled from "styled-components";
 import {useBlogApis} from "@/common/apis";
 import {useParams} from "react-router-dom";
 import {useNavigate} from "react-router-dom";
-import {formatTimestamp} from "@/common/util";
 import {useZustandStore} from "@/common/store";
 import React, {useState, useEffect} from "react";
 import {GitHubComment} from "@/components/detail";
@@ -124,6 +123,7 @@ export const DetailPage = () => {
     window.scrollTo({top: 0, behavior: "smooth"});
   };
 
+  // 댓글달기 함수
   const handleComment = () => {
     const maxScroll = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
 
@@ -133,6 +133,7 @@ export const DetailPage = () => {
     });
   };
 
+  // 링크 복사 함수
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(window.location.href);
@@ -192,6 +193,32 @@ export const DetailPage = () => {
     return headings;
   };
 
+  // 시간 포맷 함수
+  const formatTimestamp = (timestamp) => {
+    let date;
+
+    // ISO 문자열인 경우
+    if (typeof timestamp === "string") {
+      date = new Date(timestamp);
+    }
+    // Firebase Timestamp인 경우
+    else if (timestamp && timestamp.toDate) {
+      date = timestamp.toDate();
+    }
+    // 그 외의 경우
+    else {
+      return "날짜 없음";
+    }
+
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+
+    return `${year}-${month}-${day} ${hours}:${minutes}`;
+  };
+
   // 상세 포스트 가져오기 API
   const getDetailPost = async (detailId) => {
     try {
@@ -207,6 +234,7 @@ export const DetailPage = () => {
     }
   };
 
+  // 포스트 삭제 핸들러
   const handleDeletePost = () => {
     setActiveModal({twoButtonModal: true});
     setModalMessage({
@@ -220,25 +248,22 @@ export const DetailPage = () => {
     setModalConfirmHandler(() => confirmDelete());
   };
 
-  // 삭제 확인
+  // 포스트 삭제 API
   const confirmDelete = async () => {
     try {
-      await deletePost(detailId);
-      setActiveModal({twoButtonModal: false});
-      setModalMessage({
-        topMessage: "포스트가 성공적으로 삭제되었습니다.",
-        bottomMessage: "",
-      });
-      setModalButton({
-        cancelButton: "",
-        confirmButton: "확인",
-      });
-      setModalConfirmHandler(() => () => {
-        setActiveModal({oneButtonModal: false});
-        navigate("/");
-      });
-      setActiveModal({oneButtonModal: true});
-      navigate("/");
+      const response = await deletePost(detailId);
+      if (response.success) {
+        setActiveModal({twoButtonModal: false, oneButtonModal: true});
+        setModalMessage({
+          topMessage: "포스트가 성공적으로 삭제되었습니다.",
+          bottomMessage: "",
+        });
+
+        setModalConfirmHandler(() => {
+          setActiveModal({oneButtonModal: false});
+          navigate("/");
+        });
+      }
     } catch (error) {
       console.error("삭제 오류:", error);
       setActiveModal({twoButtonModal: false});
@@ -250,7 +275,7 @@ export const DetailPage = () => {
         cancelButton: "",
         confirmButton: "확인",
       });
-      setModalConfirmHandler(() => () => setActiveModal({oneButtonModal: false}));
+      setModalConfirmHandler(() => setActiveModal({oneButtonModal: false}));
       setActiveModal({oneButtonModal: true});
     }
   };

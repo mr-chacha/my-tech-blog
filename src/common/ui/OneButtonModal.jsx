@@ -1,10 +1,20 @@
-import {useCsStore, useZustandStore} from "@/common/store";
+import {useZustandStore} from "@/common/store";
 import {Box, Modal} from "@mui/material";
 import React from "react";
 import styled from "styled-components";
 
 export const OneButtonModal = () => {
-  const {activeModal, setActiveModal, modalMessage} = useZustandStore();
+  const {activeModal, setActiveModal, modalMessage, modalConfirmHandler, setModalConfirmHandler} = useZustandStore();
+
+  const handleConfirm = () => {
+    if (modalConfirmHandler) {
+      modalConfirmHandler();
+
+      setModalConfirmHandler(null);
+    } else {
+      setActiveModal({...activeModal, oneButtonModal: false});
+    }
+  };
 
   return (
     <Modal open={activeModal.oneButtonModal} onClose={() => setActiveModal({...activeModal, oneButtonModal: false})}>
@@ -14,7 +24,7 @@ export const OneButtonModal = () => {
           {modalMessage?.bottomMessage && <Message className="bottom-message">{modalMessage?.bottomMessage}</Message>}
         </MessageBox>
         <ButtonBox>
-          <ConfirmButton onClick={() => setActiveModal({...activeModal, oneButtonModal: false})}>확인</ConfirmButton>
+          <ConfirmButton onClick={handleConfirm}>확인</ConfirmButton>
         </ButtonBox>
       </ModalBox>
     </Modal>
