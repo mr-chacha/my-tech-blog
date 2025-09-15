@@ -475,7 +475,7 @@ export const FormPage = () => {
 
       // 카테고리가 기본 목록에 없으면 직접입력으로 설정
       const categoryExists = CATEGORY_LIST.some((cat) => cat.value === response.data.category);
-      if (!categoryExists && postData.category) {
+      if (!categoryExists && response.data.category) {
         setCategory("직접입력");
         setCategoryInput(response.data.category);
       }
