@@ -1,4 +1,4 @@
-import {useZustandStore} from "frontend/src/common/store";
+import {useZustandStore} from "@/common/store";
 import React from "react";
 import styled, {keyframes} from "styled-components";
 

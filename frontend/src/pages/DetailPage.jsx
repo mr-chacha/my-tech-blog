@@ -1,13 +1,13 @@
 import styled from "styled-components";
-import {useBlogApis} from "frontend/src/common/apis";
+import {useBlogApis} from "@/common/apis";
 import {useParams} from "react-router-dom";
 import {useNavigate} from "react-router-dom";
-import {useZustandStore} from "frontend/src/common/store";
+import {useZustandStore} from "@/common/store";
 import React, {useState, useEffect} from "react";
-import {GitHubComment} from "frontend/src/components/detail";
-import {MarkDownContent} from "frontend/src/components/layout";
+import {GitHubComment} from "@/components/detail";
+import {MarkDownContent} from "@/components/layout";
 import {CalendarSVG, LinkCopySVG, ReplySVG, ScrollTopSVG} from "@public/Icon";
-import {useSEO, truncateDescription, generateSEOKeywords, getCurrentURL} from "frontend/src/common/seo";
+import {useSEO, truncateDescription, generateSEOKeywords, getCurrentURL} from "@/common/seo";
 
 export const DetailPage = () => {
   const {detailId} = useParams();

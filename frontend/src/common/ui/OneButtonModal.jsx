@@ -1,4 +1,4 @@
-import {useZustandStore} from "frontend/src/common/store";
+import {useZustandStore} from "@/common/store";
 import {Box, Modal} from "@mui/material";
 import React from "react";
 import styled from "styled-components";

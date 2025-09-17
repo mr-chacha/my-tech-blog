@@ -1,11 +1,9 @@
-import {db} from "frontend/src/server/firebase";
 import styled from "styled-components";
+import {useBlogApis} from "@/common/apis";
+import {useZustandStore} from "@/common/store";
 import React, {useEffect, useState} from "react";
-import {useZustandStore} from "frontend/src/common/store";
-import {PostLists, RecentPostLists} from "frontend/src/components/main";
-import {collection, getDocs, orderBy, query} from "firebase/firestore";
-import {useSEO, getCurrentURL} from "frontend/src/common/seo";
-import {useBlogApis} from "frontend/src/common/apis";
+import {useSEO, getCurrentURL} from "@/common/seo";
+import {PostLists, RecentPostLists} from "@/components/main";
 
 export const MainPage = () => {
   // 메인 페이지 SEO 최적화

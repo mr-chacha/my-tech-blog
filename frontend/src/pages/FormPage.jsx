@@ -1,14 +1,12 @@
 import {marked} from "marked";
 import styled from "styled-components";
-import {useBlogApis} from "frontend/src/common/apis";
-import {useLocation, useNavigate} from "react-router-dom";
+import {useBlogApis} from "@/common/apis";
 import {EditorState} from "@codemirror/state";
+import {useZustandStore} from "@/common/store";
 import {EditorView, basicSetup} from "codemirror";
-import {serverTimestamp} from "firebase/firestore";
 import {markdown} from "@codemirror/lang-markdown";
 import React, {useRef, useEffect, useState} from "react";
-import {useZustandStore} from "frontend/src/common/store";
-
+import {useLocation, useNavigate} from "react-router-dom";
 export const FormPage = () => {
   const CATEGORY_LIST = [
     {id: 0, value: "React"},

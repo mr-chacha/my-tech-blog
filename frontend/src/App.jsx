@@ -1,13 +1,14 @@
-import {GlobalStyles} from "frontend/src/common/style";
-import {Footer, Header} from "frontend/src/components/layout";
-import {AboutPage, DetailPage, FormPage, LoginPage, MainPage} from "frontend/src/pages";
-import React, {useEffect, useState} from "react";
-import {BrowserRouter, Route, Routes, Navigate, useLocation} from "react-router-dom";
 import styled from "styled-components";
-import {useZustandStore} from "frontend/src/common/store";
-import {auth} from "frontend/src/server/firebase";
+import {auth} from "@/server/firebase";
+import {GlobalStyles} from "@/common/style";
+import {useZustandStore} from "@/common/store";
+import React, {useEffect, useState} from "react";
 import {onAuthStateChanged} from "firebase/auth";
-import {LoadingSpinner, NotFoundPage, OneButtonModal, TwoButtonModal} from "frontend/src/common/ui";
+import {Footer, Header} from "@/components/layout";
+import {AboutPage, DetailPage, FormPage, LoginPage, MainPage} from "@/pages";
+import {BrowserRouter, Route, Routes, Navigate, useLocation} from "react-router-dom";
+import {LoadingSpinner, NotFoundPage, OneButtonModal, TwoButtonModal} from "@/common/ui";
+
 function AppContent() {
   const {isDarkMode, userInfo, setUserInfo} = useZustandStore();
   const location = useLocation();

@@ -1,7 +1,7 @@
 import React from "react";
 import styled from "styled-components";
 import {CalendarSVG} from "@public/Icon";
-import {useCustomNav} from "frontend/src/common/util";
+import {useCustomNav} from "@/common/util";
 import defaultImage from "@public/chacha-dev.png";
 
 export const RecentPostLists = ({recentPostLists}) => {

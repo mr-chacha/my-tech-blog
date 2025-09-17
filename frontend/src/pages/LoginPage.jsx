@@ -1,9 +1,9 @@
 import React from "react";
 import styled from "styled-components";
 import {GitHubSVG} from "@public/Icon";
-import {useBlogApis} from "frontend/src/common/apis";
+import {useBlogApis} from "@/common/apis";
 import {useNavigate} from "react-router-dom";
-import {useZustandStore} from "frontend/src/common/store";
+import {useZustandStore} from "@/common/store";
 
 export const LoginPage = () => {
   const navigate = useNavigate();

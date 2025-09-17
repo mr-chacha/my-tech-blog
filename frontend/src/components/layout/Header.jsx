@@ -1,12 +1,12 @@
-import {useZustandStore} from "frontend/src/common/store";
-import {GlobalText} from "frontend/src/common/style";
-import {GitHubSVG, MoonSVG, SunSVG} from "@public/Icon";
-import React, {useState, useEffect} from "react";
-import {useNavigate} from "react-router-dom";
 import styled from "styled-components";
 import {signOut} from "firebase/auth";
-import {auth} from "frontend/src/server/firebase";
 
+import {auth} from "@/server/firebase";
+import {GlobalText} from "@/common/style";
+import {useNavigate} from "react-router-dom";
+import {useZustandStore} from "@/common/store";
+import React, {useState, useEffect} from "react";
+import {GitHubSVG, MoonSVG, SunSVG} from "@public/Icon";
 export const Header = () => {
   const {userInfo, setUserInfo, isDarkMode, setIsDarkMode} = useZustandStore();
 

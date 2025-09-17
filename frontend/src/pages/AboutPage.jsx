@@ -1,8 +1,8 @@
 import React from "react";
 import styled from "styled-components";
-import {useZustandStore} from "frontend/src/common/store";
+import {useZustandStore} from "@/common/store";
 import defaultImage from "@public/chacha-dev.png";
-import {getCurrentURL, useSEO} from "frontend/src/common/seo";
+import {getCurrentURL, useSEO} from "@/common/seo";
 
 export const AboutPage = () => {
   useSEO({
