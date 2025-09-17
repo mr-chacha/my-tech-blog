@@ -1,4 +1,4 @@
-import AWS from "aws-sdk";
+const AWS = require("aws-sdk");
 
 // AWS SDK 설정
 AWS.config.update({
@@ -9,7 +9,7 @@ AWS.config.update({
 
 const s3 = new AWS.S3();
 
-export const uploadToS3 = async (fileName, file) => {
+const uploadToS3 = async (fileName, file) => {
   const uploadParams = {
     Bucket: process.env.AWS_BUCKET_NAME,
     Key: fileName,
@@ -19,7 +19,6 @@ export const uploadToS3 = async (fileName, file) => {
 
   try {
     const result = await s3.upload(uploadParams).promise();
-    console.log("S3 업로드 성공:", result.Location);
     return result.Location;
   } catch (error) {
     console.error("S3 업로드 실패:", error);
@@ -27,7 +26,7 @@ export const uploadToS3 = async (fileName, file) => {
   }
 };
 
-export const deleteFromS3 = async (fileName) => {
+const deleteFromS3 = async (fileName) => {
   const deleteParams = {
     Bucket: process.env.AWS_BUCKET_NAME,
     Key: fileName,
@@ -40,4 +39,9 @@ export const deleteFromS3 = async (fileName) => {
     console.error("S3 삭제 실패:", error);
     throw error;
   }
+};
+
+module.exports = {
+  uploadToS3,
+  deleteFromS3,
 };

@@ -4,9 +4,14 @@ const path = require("path");
 require("dotenv").config();
 
 // Firebase Admin 설정 추가
-const {db, collection, query, orderBy, getDocs, doc, getDoc, addDoc, deleteDoc} = require("./src/config/firebaseAdmin"); // 경로 변경
+const {db} = require("./src/config/firebaseAdmin");
 const app = express();
 const PORT = process.env.PORT || 5001;
+
+// backend/server.js 또는 backend/src/routes/uploads.js
+const {uploadToS3} = require("./src/utils/aws-s3");
+const multer = require("multer");
+const upload = multer({storage: multer.memoryStorage()});
 
 // 미들웨어 설정
 app.use(cors());
@@ -154,6 +159,43 @@ app.post("/api/posts", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "포스트 생성에 실패했습니다.",
+      error: error.message,
+    });
+  }
+});
+
+// 이미지 s3에 업로드
+app.post("/api/upload", upload.single("image"), async (req, res) => {
+  try {
+
+    const file = req.file;
+
+    if (!file) {
+      return res.status(400).json({
+        success: false,
+        message: "파일이 업로드되지 않았습니다.",
+        error: "No file uploaded",
+      });
+    }
+
+    const fileName = `images/${Date.now()}_${Math.random().toString(36).substring(2, 15)}.${file.originalname
+      .split(".")
+      .pop()}`;
+
+    const downloadURL = await uploadToS3(fileName, file);
+
+    res.json({
+      success: true,
+      data: {
+        url: downloadURL,
+        fileName: fileName,
+      },
+    });
+  } catch (error) {
+    console.error("업로드 에러:", error); // 디버깅용
+    res.status(500).json({
+      success: false,
+      message: "이미지 업로드 실패",
       error: error.message,
     });
   }

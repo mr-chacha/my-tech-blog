@@ -21,7 +21,7 @@ export const FormPage = () => {
   const location = useLocation();
   const {userInfo, setActiveModal, setModalMessage, setModalConfirmHandler, isLoading, setIsLoading} =
     useZustandStore();
-  const {postImage, createPost, fetchDetailPost, updatePost} = useBlogApis();
+  const {createPost, fetchDetailPost, updatePost, postImage} = useBlogApis();
   const [title, setTitle] = useState("");
   const [activeTab, setActiveTab] = useState([]);
   const [editorContent, setEditorContent] = useState("");
@@ -310,7 +310,7 @@ export const FormPage = () => {
         const fileExtension = tempFile.name.split(".").pop();
         const fileName = `images/${timestamp}_${randomId}.${fileExtension}`;
 
-        const downloadURL = await postImage(fileName, tempFile);
+        const downloadURL = await postImage(tempFile.file);
         const tempImageRegex = new RegExp(`!\\[([^\\]]*)\\]\\(${tempFile.tempName}\\)`, "g");
         updatedContent = updatedContent.replace(tempImageRegex, `![$1](${downloadURL})`);
 
@@ -420,9 +420,8 @@ export const FormPage = () => {
         }
       } else {
         // 새로운 포스트 생성
-
         const response = await createPost(postData);
-        console.log("res", response);
+
         if (response.data) {
           nav(`/post/${response.data.id}`);
         }
