@@ -114,9 +114,21 @@ export const FormPage = () => {
     let convertedContent = markdownContent;
 
     tempFiles.forEach((tempFile) => {
-      // 임시 파일명을 base64 URL로 교체 (미리보기용)
-      const tempImageRegex = new RegExp(`!\\[([^\\]]*)\\]\\(${tempFile.tempName}\\)`, "g");
-      convertedContent = convertedContent.replace(tempImageRegex, `![$1](${tempFile.base64Url})`);
+      if (tempFile.isVideo) {
+        // 동영상용 정규식
+        const tempVideoRegex = new RegExp(
+          `<video controls width="100%">\\s*<source src="${tempFile.tempName}" type="${tempFile.type}">\\s*동영상을 재생할 수 없습니다\\.\\s*</video>`,
+          "g"
+        );
+        convertedContent = convertedContent.replace(
+          tempVideoRegex,
+          `<video controls width="100%"><source src="${tempFile.base64Url}" type="${tempFile.type}">동영상을 재생할 수 없습니다.</video>`
+        );
+      } else {
+        // 기존 이미지 처리 로직
+        const tempImageRegex = new RegExp(`!\\[([^\\]]*)\\]\\(${tempFile.tempName}\\)`, "g");
+        convertedContent = convertedContent.replace(tempImageRegex, `![$1](${tempFile.base64Url})`);
+      }
     });
 
     return convertedContent;
@@ -255,17 +267,19 @@ export const FormPage = () => {
 
   // 이미지 추가 함수 base64로 변환
   const handleFileUpload = async (files) => {
-    const imageFiles = Array.from(files).filter((file) => file.type.startsWith("image/"));
+    const mediaFiles = Array.from(files).filter(
+      (file) => file.type.startsWith("image/") || file.type.startsWith("video/")
+    );
 
-    if (imageFiles.length === 0) {
-      alert("이미지 파일만 업로드 가능합니다.");
+    if (mediaFiles.length === 0) {
+      alert("이미지 또는 동영상 파일만 업로드 가능합니다.");
       return;
     }
 
     try {
       setIsLoading(true);
 
-      for (const file of imageFiles) {
+      for (const file of mediaFiles) {
         // 파일을 base64로 변환
         const base64Url = await fileToBase64(file);
 
@@ -282,10 +296,23 @@ export const FormPage = () => {
           size: file.size,
           type: file.type,
           addedAt: new Date(),
+          isVideo: file.type.startsWith("video/"),
         };
 
         setTempFiles((prev) => [...prev, tempFileInfo]);
-        insertText("![", `](${tempId})`, file.name.split(".")[0]);
+        // insertText("![", `](${tempId})`, file.name.split(".")[0]);
+
+        // 동영상과 이미지에 따라 다른 마크다운 문법 사용
+        if (file.type.startsWith("video/")) {
+          // video 태그를 직접 삽입 (insertText의 before 매개변수에 전체 태그를 넣음)
+          const videoTag = `<video controls width="100%">
+  <source src="${tempId}" type="${file.type}">
+  동영상을 재생할 수 없습니다.
+</video>`;
+          insertText(videoTag, "", "");
+        } else {
+          insertText("![", `](${tempId})`, file.name.split(".")[0]);
+        }
       }
     } catch (error) {
       console.error("이미지 처리 실패:", error);
@@ -297,8 +324,6 @@ export const FormPage = () => {
 
   // 이미지 저장 API
   const uploadImage = async () => {
-    // base64를 Firebase Storage에 업로드하고 URL 교체하는 함수
-
     if (tempFiles.length === 0) return {content: editorContent, files: []};
 
     let updatedContent = editorContent;
@@ -306,15 +331,29 @@ export const FormPage = () => {
 
     for (const tempFile of tempFiles) {
       try {
-        // 안전한 파일명 생성
         const timestamp = Date.now();
         const randomId = Math.random().toString(36).substring(2, 15);
         const fileExtension = tempFile.name.split(".").pop();
-        const fileName = `images/${timestamp}_${randomId}.${fileExtension}`;
+        const folderName = tempFile.isVideo ? "videos" : "images";
+        const fileName = `${folderName}/${timestamp}_${randomId}.${fileExtension}`;
 
         const downloadURL = await postImage(fileName, tempFile);
-        const tempImageRegex = new RegExp(`!\\[([^\\]]*)\\]\\(${tempFile.tempName}\\)`, "g");
-        updatedContent = updatedContent.replace(tempImageRegex, `![$1](${downloadURL})`);
+
+        if (tempFile.isVideo) {
+          // 동영상용 정규식으로 교체
+          const tempVideoRegex = new RegExp(
+            `<video controls width="100%">\\s*<source src="${tempFile.tempName}" type="${tempFile.type}">\\s*동영상을 재생할 수 없습니다\\.\\s*</video>`,
+            "g"
+          );
+          updatedContent = updatedContent.replace(
+            tempVideoRegex,
+            `<video controls width="100%"><source src="${downloadURL}" type="${tempFile.type}">동영상을 재생할 수 없습니다.</video>`
+          );
+        } else {
+          // 기존 이미지 처리 로직
+          const tempImageRegex = new RegExp(`!\\[([^\\]]*)\\]\\(${tempFile.tempName}\\)`, "g");
+          updatedContent = updatedContent.replace(tempImageRegex, `![$1](${downloadURL})`);
+        }
 
         const fileInfo = {
           name: tempFile.name,
@@ -322,12 +361,13 @@ export const FormPage = () => {
           path: fileName,
           size: tempFile.size,
           type: tempFile.type,
+          isVideo: tempFile.isVideo,
           uploadedAt: new Date(),
         };
 
         uploadedFileInfos.push(fileInfo);
       } catch (error) {
-        console.error(`이미지 업로드 실패:`, error);
+        console.error(`파일 업로드 실패:`, error);
         throw error;
       }
     }
@@ -403,15 +443,16 @@ export const FormPage = () => {
         viewCount: 0,
         likeCount: 0,
         commentCount: 0,
-        bestImage: bestImage,
-        image: representativeImage,
+        bestImage: bestImage || null,
+        image: representativeImage || null,
         isRecommended: false,
-        file: uploadedFileInfos,
-        tags: activeTab,
+        file: uploadedFileInfos || [],
+        tags: activeTab || [],
         published: true,
         author: "차차",
         authorId: userInfo?.uid,
       };
+      console.log("postData", postData);
 
       // 수정 모드와 등록 모드 구분
       if (isEditMode && editPostId) {
@@ -423,22 +464,29 @@ export const FormPage = () => {
         const response = await postPost("posts", postData);
         nav(`/post/${response.id}`);
       }
+      setModalMessage({
+        topMessage: `포스트 ${isEditMode ? "수정" : "저장"}에 성공했습니다.`,
+      });
       setActiveModal({
+        oneButtonModal: true,
         twoButtonModal: false,
       });
 
       // 폼 초기화
       resetForm();
     } catch (error) {
-      setActiveModal({
-        twoButtonModal: true,
-      });
+      console.log(`포스트 ${isEditMode ? "수정" : "저장"}에 실패했습니다.`, error);
       setModalMessage({
         topMessage: "포스트 저장에 실패했습니다.",
       });
+      setActiveModal({
+        oneButtonModal: true,
+        twoButtonModal: false,
+      });
+
       setModalConfirmHandler(() => () => {
         setActiveModal({
-          twoButtonModal: false,
+          oneButtonModal: false,
         });
       });
     } finally {
@@ -602,26 +650,44 @@ export const FormPage = () => {
 
   // 마크다운에서 이미지 URL들을 추출하는 함수
   const extractImagesFromContent = (content) => {
-    const imageRegex = /!\[.*?\]\((https?:\/\/[^\s\)]+)\)/g;
-    const images = [];
-    let match;
+    const files = [];
 
+    // 기존 이미지 추출 로직
+    const imageRegex = /!\[.*?\]\((https?:\/\/[^\s\)]+)\)/g;
+    let match;
     while ((match = imageRegex.exec(content)) !== null) {
-      const imageUrl = match[1];
+      const fileUrl = match[1];
       const altText = match[0].match(/!\[(.*?)\]/)?.[1] || "이미지";
 
-      // 중복 제거
-      if (!images.some((img) => img.url === imageUrl)) {
-        images.push({
+      if (!files.some((file) => file.url === fileUrl)) {
+        files.push({
           id: `existing_${Date.now()}_${Math.random()}`,
-          url: imageUrl,
+          url: fileUrl,
           name: altText,
           type: "existing",
+          isVideo: false,
         });
       }
     }
 
-    return images;
+    // 동영상 추출 로직 추가
+    const videoRegex = /<video[^>]*>[\s\S]*?<source src="(https?:\/\/[^"]+)"[^>]*>[\s\S]*?<\/video>/g;
+    while ((match = videoRegex.exec(content)) !== null) {
+      const fileUrl = match[1];
+      const fileName = fileUrl.split("/").pop() || "동영상";
+
+      if (!files.some((file) => file.url === fileUrl)) {
+        files.push({
+          id: `existing_${Date.now()}_${Math.random()}`,
+          url: fileUrl,
+          name: fileName,
+          type: "existing",
+          isVideo: true,
+        });
+      }
+    }
+
+    return files;
   };
   // 대표이미지 선택 함수
   const handleBestImageSelect = (imageUrl) => {
@@ -736,7 +802,7 @@ export const FormPage = () => {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
+                accept="image/*,video/*"
                 multiple
                 onChange={handleFileInputChange}
                 style={{display: "none"}}
