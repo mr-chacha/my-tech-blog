@@ -3,8 +3,9 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkBreaks from "remark-breaks";
 import rehypeSlug from "rehype-slug";
+// import rehypeRaw from "rehype-raw";
 import styled from "styled-components";
-
+import {marked} from "marked"; // 이 줄 추가
 export const MarkDownContent = ({content, tempFiles = [], isPreview = false}) => {
   if (!content) {
     return null;
@@ -55,6 +56,19 @@ export const MarkDownContent = ({content, tempFiles = [], isPreview = false}) =>
       .join("\n\n");
   };
 
+  // marked 설정
+  marked.setOptions({
+    breaks: true,
+  });
+
+  const hasVideoTag = content.includes("<video");
+  if (hasVideoTag) {
+    const processedContent = preprocessMarkdown(convertTempImagesToPreview(content));
+    const htmlContent = marked(processedContent);
+
+    return <ContentWrapper dangerouslySetInnerHTML={{__html: htmlContent}} />;
+  }
+
   return (
     <ContentWrapper>
       <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} rehypePlugins={[rehypeSlug]}>
@@ -72,7 +86,14 @@ const ContentWrapper = styled.div`
   blockquote {
     background-color: var(--Back-Color) !important;
   }
-
+  video {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 1.5rem auto;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  }
   p + h1,
   p + h2,
   p + h3,

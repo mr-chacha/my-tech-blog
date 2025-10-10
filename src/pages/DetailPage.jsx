@@ -197,7 +197,7 @@ export const DetailPage = () => {
     try {
       const response = await fetchDetailPost(detailId);
       setDetailPost(response);
-
+      console.log("response", response);
       const contentToc = tocFromMarkdown(response.content);
       setTocItems(contentToc);
     } catch (error) {
