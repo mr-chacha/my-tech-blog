@@ -150,6 +150,7 @@ const ContentWrapper = styled.div`
   }
 
   ul {
+    margin-top: 0.75rem;
     margin-left: 1.5rem;
     margin-bottom: 0.75rem;
     list-style-type: disc;
@@ -197,7 +198,7 @@ const ContentWrapper = styled.div`
       padding: 0;
       font-family: Monaco, Consolas, monospace;
       font-size: 0.875rem;
-      color: var(--Text-Color);
+      color: var(--Dark);
       line-height: 1.5;
     }
   }

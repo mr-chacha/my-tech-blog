@@ -1038,6 +1038,7 @@ const ContentWrapper = styled.div`
   }
 
   ul {
+    margin-top: 0.75rem;
     margin-left: 1.5rem;
     margin-bottom: 0.75rem;
     list-style-type: disc;
