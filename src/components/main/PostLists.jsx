@@ -56,29 +56,31 @@ export const PostLists = ({postLists}) => {
   const formatDate = (timestamp) => {
     if (!timestamp) return "";
 
-    if (timestamp.toDate) {
-      return timestamp
-        .toDate()
-        .toLocaleDateString("ko-KR", {
-          year: "numeric",
-          month: "2-digit",
-          day: "2-digit",
-        })
-        .replace(/\./g, "년 ")
-        .replace(/\s$/, "일");
+    let date;
+
+    // Firebase Timestamp 객체 (seconds, nanoseconds 구조)
+    if (timestamp && typeof timestamp === "object" && timestamp.seconds) {
+      date = new Date(timestamp.seconds * 1000);
+    }
+    // toDate() 메서드가 있는 경우
+    else if (timestamp.toDate) {
+      date = timestamp.toDate();
+    }
+    // 이미 Date 객체인 경우
+    else if (timestamp instanceof Date) {
+      date = timestamp;
+    }
+    // ISO 문자열인 경우
+    else if (typeof timestamp === "string") {
+      date = new Date(timestamp);
     }
 
-    return timestamp;
-  };
+    // 날짜를 한글 형식으로 변환
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
 
-  const calculateReadTime = (content) => {
-    if (!content) return "1분";
-
-    const wordsPerMinute = 200;
-    const wordCount = content.length / 2;
-    const readTime = Math.ceil(wordCount / wordsPerMinute);
-
-    return `${readTime}분`;
+    return `${year}년 ${month}월 ${day}일`;
   };
 
   // 빈 배열인 경우 처리
@@ -212,25 +214,6 @@ export const PostLists = ({postLists}) => {
                         </svg>
                       </CalendarIcon>
                       <span>{formatDate(post.updatedAt || post.createdAt)}</span>
-                    </MetaItem>
-                    <MetaItem>
-                      <ClockIcon>
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="24"
-                          height="24"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <circle cx="12" cy="12" r="10"></circle>
-                          <polyline points="12 6 12 12 16.5 12"></polyline>
-                        </svg>
-                      </ClockIcon>
-                      <span>{calculateReadTime(post.content)}</span>
                     </MetaItem>
                   </PostMeta>
                 </PostContent>
