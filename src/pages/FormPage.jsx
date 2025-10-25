@@ -8,6 +8,7 @@ import {serverTimestamp} from "firebase/firestore";
 import {markdown} from "@codemirror/lang-markdown";
 import React, {useRef, useEffect, useState} from "react";
 import {useZustandStore} from "@/common/store";
+import TableEditor from "react-table-editor";
 
 export const FormPage = () => {
   const CATEGORY_LIST = [
@@ -37,6 +38,14 @@ export const FormPage = () => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [editPostId, setEditPostId] = useState(null);
 
+  // 표 관련 상태 추가
+  const [showTableModal, setShowTableModal] = useState(false);
+  const [tableData, setTableData] = useState([
+    ["제목 1", "제목 2", "제목 3"],
+    ["내용 1", "내용 2", "내용 3"],
+    ["내용 4", "내용 5", "내용 6"],
+  ]);
+
   const tagInputRef = useRef(null);
   const editorRef = useRef(null);
   const isProcessingRef = useRef(false);
@@ -53,6 +62,11 @@ export const FormPage = () => {
     setEditorContent("");
     setBestImage("");
     setExistingImages([]);
+    setTableData([
+      ["제목 1", "제목 2", "제목 3"],
+      ["내용 1", "내용 2", "내용 3"],
+      ["내용 4", "내용 5", "내용 6"],
+    ]);
     if (editorViewRef.current) {
       editorViewRef.current.dispatch({
         changes: {
@@ -62,6 +76,222 @@ export const FormPage = () => {
         },
       });
     }
+  };
+
+  // 표 삽입 함수
+  const insertTable = () => {
+    if (!editorViewRef.current) return;
+
+    const view = editorViewRef.current;
+    const state = view.state;
+    const selection = state.selection.main;
+
+    // HTML 테이블 생성
+    let tableHtml = "<table>\n";
+
+    // 헤더 행
+    tableHtml += "  <thead>\n    <tr>\n";
+    tableData[0].forEach((cell) => {
+      tableHtml += `      <th>${cell}</th>\n`;
+    });
+    tableHtml += "    </tr>\n  </thead>\n";
+
+    // 바디 행들
+    tableHtml += "  <tbody>\n";
+    tableData.slice(1).forEach((row) => {
+      tableHtml += "    <tr>\n";
+      row.forEach((cell) => {
+        tableHtml += `      <td>${cell}</td>\n`;
+      });
+      tableHtml += "    </tr>\n";
+    });
+    tableHtml += "  </tbody>\n</table>\n";
+
+    view.dispatch({
+      changes: {
+        from: selection.from,
+        to: selection.to,
+        insert: tableHtml,
+      },
+      selection: {
+        anchor: selection.from + tableHtml.length,
+        head: selection.from + tableHtml.length,
+      },
+    });
+
+    view.focus();
+  };
+
+  // 표 편집 모달
+  // 기존 코드에서 이 부분만 교체
+  const TableEditorModal = () => {
+    if (!showTableModal) return null;
+
+    const addRow = () => {
+      const newRow = Array(tableData[0].length).fill("");
+      setTableData([...tableData, newRow]);
+    };
+
+    const addColumn = () => {
+      setTableData(tableData.map((row) => [...row, ""]));
+    };
+
+    const deleteRow = (index) => {
+      if (tableData.length > 1) {
+        setTableData(tableData.filter((_, i) => i !== index));
+      }
+    };
+
+    const deleteColumn = (index) => {
+      if (tableData[0].length > 1) {
+        setTableData(tableData.map((row) => row.filter((_, i) => i !== index)));
+      }
+    };
+
+    const updateCell = (rowIndex, colIndex, value) => {
+      const newData = [...tableData];
+      newData[rowIndex][colIndex] = value;
+      setTableData(newData);
+    };
+
+    return (
+      <ModalOverlay onClick={() => setShowTableModal(false)}>
+        <ModalContent onClick={(e) => e.stopPropagation()}>
+          <ModalHeader>
+            <h3>표 편집</h3>
+            <CloseButton onClick={() => setShowTableModal(false)}>×</CloseButton>
+          </ModalHeader>
+
+          <ModalBody>
+            <div style={{marginBottom: "20px"}}>
+              <button
+                onClick={addRow}
+                style={{
+                  marginRight: "10px",
+                  padding: "8px 16px",
+                  backgroundColor: "#3b82f6",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "4px",
+                }}
+              >
+                + 행 추가
+              </button>
+              <button
+                onClick={addColumn}
+                style={{
+                  padding: "8px 16px",
+                  backgroundColor: "#3b82f6",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "4px",
+                }}
+              >
+                + 열 추가
+              </button>
+            </div>
+
+            <table style={{borderCollapse: "collapse", width: "100%"}}>
+              <thead>
+                <tr>
+                  {tableData[0].map((_, colIndex) => (
+                    <th
+                      key={colIndex}
+                      style={{
+                        border: "1px solid #e2e8f0",
+                        padding: "0",
+                        position: "relative",
+                        backgroundColor: "#f8fafc",
+                      }}
+                    >
+                      <input
+                        value={tableData[0][colIndex]}
+                        onChange={(e) => updateCell(0, colIndex, e.target.value)}
+                        placeholder="헤더"
+                        style={{
+                          border: "none",
+                          outline: "none",
+                          width: "100%",
+                          padding: "12px",
+                          background: "transparent",
+                        }}
+                      />
+                      <button
+                        onClick={() => deleteColumn(colIndex)}
+                        style={{
+                          position: "absolute",
+                          top: "4px",
+                          right: "4px",
+                          background: "#ef4444",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "50%",
+                          width: "20px",
+                          height: "20px",
+                          fontSize: "12px",
+                        }}
+                      >
+                        ×
+                      </button>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {tableData.slice(1).map((row, rowIndex) => (
+                  <tr key={rowIndex}>
+                    {row.map((cell, colIndex) => (
+                      <td key={colIndex} style={{border: "1px solid #e2e8f0", padding: "0"}}>
+                        <input
+                          value={cell}
+                          onChange={(e) => updateCell(rowIndex + 1, colIndex, e.target.value)}
+                          placeholder="내용"
+                          style={{
+                            border: "none",
+                            outline: "none",
+                            width: "100%",
+                            padding: "12px",
+                            background: "transparent",
+                          }}
+                        />
+                      </td>
+                    ))}
+                    <td style={{border: "1px solid #e2e8f0", padding: "0"}}>
+                      <button
+                        onClick={() => deleteRow(rowIndex + 1)}
+                        style={{
+                          background: "#ef4444",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "50%",
+                          width: "20px",
+                          height: "20px",
+                          fontSize: "12px",
+                        }}
+                      >
+                        ×
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </ModalBody>
+
+          <ModalFooter>
+            <Button onClick={() => setShowTableModal(false)}>취소</Button>
+            <Button
+              onClick={() => {
+                insertTable();
+                setShowTableModal(false);
+              }}
+            >
+              삽입
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </ModalOverlay>
+    );
   };
 
   // 파일 입력 핸들러
@@ -727,6 +957,7 @@ export const FormPage = () => {
 
   return (
     <FormLayout>
+      <TableEditorModal />
       <FormContainer
         ref={dropAreaRef}
         onDragEnter={handleDragEnter}
@@ -856,6 +1087,9 @@ export const FormPage = () => {
                   <FormToolButton onClick={openFileDialog} title="이미지 업로드">
                     📁
                   </FormToolButton>
+                  <FormToolButton onClick={() => setShowTableModal(true)} title="표 삽입">
+                    📊
+                  </FormToolButton>
                 </ToolGroup>
 
                 <SaveButtonGroup>
@@ -886,6 +1120,72 @@ export const FormPage = () => {
     </FormLayout>
   );
 };
+
+// 스타일 컴포넌트들
+const ModalOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+`;
+
+const ModalContent = styled.div`
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  max-width: 800px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+`;
+
+const ModalHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+`;
+
+const CloseButton = styled.button`
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+`;
+
+const ModalBody = styled.div`
+  margin-bottom: 20px;
+`;
+
+const ModalFooter = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+`;
+
+const Button = styled.button`
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+
+  &:first-child {
+    background: #6c757d;
+    color: white;
+  }
+
+  &:last-child {
+    background: #007bff;
+    color: white;
+  }
+`;
+
 const ExistingImageBadge = styled.div`
   position: absolute;
   top: 0.25rem;
@@ -909,14 +1209,15 @@ const BestImageOption = styled.div`
   cursor: pointer;
   transition: all 0.2s;
   background-color: ${(props) => (props.$isSelected ? "#eff6ff" : "transparent")};
-  min-width: 120px; // 최소 너비 설정으로 아이템이 찌그러지지 않도록 함
-  flex-shrink: 0; // flex 아이템이 줄어들지 않도록 함
+  min-width: 120px;
+  flex-shrink: 0;
 
   &:hover {
     border-color: #3b82f6;
     background-color: #eff6ff;
   }
 `;
+
 const BestImageSelector = styled.div`
   margin-bottom: 1rem;
   padding: 1rem;
@@ -939,7 +1240,6 @@ const BestImageGrid = styled.div`
   overflow-x: auto;
   padding-bottom: 0.5rem;
 
-  /* 스크롤바 스타일링 */
   &::-webkit-scrollbar {
     height: 6px;
   }
@@ -1069,7 +1369,7 @@ const ContentWrapper = styled.div`
     border-radius: 4px;
     font-size: 0.875rem;
     font-family: Monaco, Consolas, monospace;
-    color: var(--Back-Color);
+    background: var(--Code-Back-Color);
     line-height: 1.5;
   }
 
@@ -1112,7 +1412,26 @@ const ContentWrapper = styled.div`
   del {
     text-decoration: line-through;
   }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 1.5rem 0;
+  }
+
+  th,
+  td {
+    border: 1px solid #e2e8f0;
+    padding: 12px;
+    text-align: left;
+  }
+
+  th {
+    background-color: #f8fafc;
+    font-weight: bold;
+  }
 `;
+
 const DragOverlay = styled.div`
   position: fixed;
   top: 0;
@@ -1142,6 +1461,7 @@ const DragText = styled.div`
   font-size: 1.5rem;
   font-weight: 600;
 `;
+
 const CategoryInput = styled.input`
   margin-bottom: 0.75rem;
   font: var(--Title-R);
@@ -1156,6 +1476,7 @@ const CategoryInput = styled.input`
     color: #9ca3af;
   }
 `;
+
 const CategoryBox = styled.div`
   margin-bottom: 1rem;
 
@@ -1445,7 +1766,7 @@ const PreviewContainer = styled.div`
     background-color: var(--Back-Color) !important;
   }
   code {
-    color: var(--Text-Color) !important;
+    color: var(--Dark) !important;
     line-height: 1.5;
   }
 `;

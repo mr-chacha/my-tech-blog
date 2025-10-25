@@ -60,9 +60,10 @@ export const MarkDownContent = ({content, tempFiles = [], isPreview = false}) =>
   marked.setOptions({
     breaks: true,
   });
+  // HTML 태그가 포함된 경우 (video, table 등)
+  const hasHtmlTags = content.includes("<video") || content.includes("<table");
 
-  const hasVideoTag = content.includes("<video");
-  if (hasVideoTag) {
+  if (hasHtmlTags) {
     const processedContent = preprocessMarkdown(convertTempImagesToPreview(content));
     const htmlContent = marked(processedContent);
 
@@ -83,6 +84,37 @@ const ContentWrapper = styled.div`
   line-height: 1rem;
   background-color: var(--Back-Color) !important;
   color: var(--Text-Color) !important;
+
+  // 테이블 스타일 추가
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 1.5rem 0;
+    border: 1px solid #e2e8f0;
+  }
+
+  th,
+  td {
+    border: 1px solid #e2e8f0;
+    padding: 12px;
+    text-align: left;
+    color: var(--Text-Color);
+  }
+
+  th {
+    background-color: #f8fafc;
+    font-weight: bold;
+    color: var(--Text-Color);
+  }
+
+  tr:nth-child(even) {
+    background-color: #f9fafb;
+  }
+
+  tr:hover {
+    background-color: #f3f4f6;
+  }
+
   blockquote {
     background-color: var(--Back-Color) !important;
   }
