@@ -8,7 +8,6 @@ import {serverTimestamp} from "firebase/firestore";
 import {markdown} from "@codemirror/lang-markdown";
 import React, {useRef, useEffect, useState} from "react";
 import {useZustandStore} from "@/common/store";
-import TableEditor from "react-table-editor";
 
 export const FormPage = () => {
   const CATEGORY_LIST = [
