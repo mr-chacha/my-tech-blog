@@ -4,6 +4,13 @@ import {doc, getDoc, collection, addDoc, deleteDoc, updateDoc} from "firebase/fi
 import {GithubAuthProvider, signInWithPopup, signOut} from "firebase/auth";
 
 export const useBlogApis = () => {
+  // 나만보기 포스트 조회
+  const fetchPrivatePosts = async () => {
+    const q = query(collection(db, "posts"), where("isPrivate", "==", true), orderBy("createdAt", "desc"));
+
+    const postData = await getDocs(q);
+    return postData.docs.map((doc) => ({id: doc.id, ...doc.data()}));
+  };
   // 깃헙 로그인
   const gutHubLogin = async () => {
     const provider = new GithubAuthProvider();
@@ -77,5 +84,5 @@ export const useBlogApis = () => {
     await updateDoc(postRef, updateData);
   };
 
-  return {fetchDetailPost, postImage, postPost, gutHubLogin, deletePost, updatePost};
+  return {fetchDetailPost, postImage, postPost, gutHubLogin, deletePost, updatePost, fetchPrivatePosts};
 };

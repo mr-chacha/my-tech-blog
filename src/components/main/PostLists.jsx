@@ -2,8 +2,10 @@ import React, {useState} from "react";
 import styled from "styled-components";
 import {useCustomNav} from "@/common/util";
 import defaultImage from "@public/chacha-dev.png";
+import {useZustandStore} from "@/common/store";
 
 export const PostLists = ({postLists}) => {
+  const {userInfo} = useZustandStore();
   const navHandler = useCustomNav();
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -184,6 +186,7 @@ export const PostLists = ({postLists}) => {
                 <PostContent>
                   <PostInfo>
                     {post.isRecommended && <MobileRecommendedBadge>추천</MobileRecommendedBadge>}
+                    {userInfo && post.isPrivate && <PrivateBadge>🔒</PrivateBadge>}
                     <CategoryText>{post.category || "기타"}</CategoryText>
                     <PostTitle>{post.title || "제목 없음"}</PostTitle>
                   </PostInfo>
@@ -225,6 +228,29 @@ export const PostLists = ({postLists}) => {
     </>
   );
 };
+
+const PrivateBadge = styled.div`
+  position: absolute;
+  left: 0.25rem;
+  top: 0.25rem;
+  z-index: 15;
+  border-radius: 0.125rem;
+  background-color: #6b7280;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #fafaf9;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+
+  @media (max-width: 640px) {
+    position: static;
+    display: inline-flex;
+    margin-right: 0.5rem;
+    padding: 0.125rem 0.375rem;
+  }
+`;
 
 const NoPostsMessage = styled.div`
   text-align: center;

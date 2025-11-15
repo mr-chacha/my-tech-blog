@@ -3,7 +3,7 @@ import styled from "styled-components";
 import React, {useEffect, useState} from "react";
 import {useZustandStore} from "@/common/store";
 import {PostLists, RecentPostLists} from "@/components/main";
-import {collection, getDocs, orderBy, query} from "firebase/firestore";
+import {collection, getDocs, orderBy, query} from "firebase/firestore"; // where 제거
 import {useSEO, getCurrentURL} from "@/common/seo";
 
 export const MainPage = () => {
@@ -17,30 +17,34 @@ export const MainPage = () => {
     type: "website",
   });
 
-  const {setIsLoading} = useZustandStore();
+  const {setIsLoading, userInfo} = useZustandStore(); // userInfo 추가
 
   const [recentPostLists, setRecentPostLists] = useState([]);
   const [postLists, setPostLists] = useState([]);
+
   const fetchPostData = async () => {
     try {
       setIsLoading(true);
+      // 모든 포스트를 가져온 후 클라이언트에서 필터링 (인덱스 에러 방지)
       const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
 
       const postData = await getDocs(q);
-      const postList = postData.docs.map((doc) => ({id: doc.id, ...doc.data()}));
+      const allPosts = postData.docs.map((doc) => ({id: doc.id, ...doc.data()}));
 
-      if (postList.length > 5) {
-        // 최신 5개
-        setRecentPostLists(postList.slice(0, 5));
-        setPostLists(postList.slice(5));
+      // 클라이언트에서 필터링: 관리자면 모든 포스트, 일반 사용자면 공개 포스트만
+      const filteredPosts = userInfo
+        ? allPosts // 관리자는 모든 포스트 (비공개 포함)
+        : allPosts.filter((post) => post.published !== false); // 일반 사용자는 공개 포스트만
+
+      if (filteredPosts.length > 5) {
+        setRecentPostLists(filteredPosts.slice(0, 5));
+        setPostLists(filteredPosts.slice(5));
       } else {
-        // 5개 이하면 모두 최신 포스트로
-        setRecentPostLists(postList);
+        setRecentPostLists(filteredPosts);
         setPostLists([]);
       }
     } catch (error) {
       console.error("포스트 데이터 가져오기 실패:", error);
-
       setRecentPostLists([]);
       setPostLists([]);
     } finally {
@@ -50,7 +54,7 @@ export const MainPage = () => {
 
   useEffect(() => {
     fetchPostData();
-  }, []);
+  }, [userInfo]); // userInfo 의존성 추가
 
   return (
     <MainLayout>
