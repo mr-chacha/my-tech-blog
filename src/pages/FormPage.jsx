@@ -36,6 +36,7 @@ export const FormPage = () => {
 
   const [isEditMode, setIsEditMode] = useState(false);
   const [editPostId, setEditPostId] = useState(null);
+  const [isPrivate, setIsPrivate] = useState(false);
 
   // 표 관련 상태 추가
   const [showTableModal, setShowTableModal] = useState(false);
@@ -61,6 +62,7 @@ export const FormPage = () => {
     setEditorContent("");
     setBestImage("");
     setExistingImages([]);
+    setIsPrivate(false);
     setTableData([
       ["제목 1", "제목 2", "제목 3"],
       ["내용 1", "내용 2", "내용 3"],
@@ -677,11 +679,11 @@ export const FormPage = () => {
         isRecommended: false,
         file: uploadedFileInfos || [],
         tags: activeTab || [],
-        published: true,
+        published: !isPrivate,
+        isPrivate: isPrivate,
         author: "차차",
         authorId: userInfo?.uid,
       };
-      console.log("postData", postData);
 
       // 수정 모드와 등록 모드 구분
       if (isEditMode && editPostId) {
@@ -740,6 +742,7 @@ export const FormPage = () => {
       setActiveTab(postData.tags || []);
       setEditorContent(postData.content || "");
       setBestImage(postData.bestImage || "");
+      setIsPrivate(postData.isPrivate || false);
 
       // 기존 이미지들 추출
       const extractedImages = extractImagesFromContent(postData.content || "");
@@ -1007,6 +1010,20 @@ export const FormPage = () => {
                 />
               )}
 
+              <PrivacyToggleContainer>
+                <PrivacyToggleLabel>
+                  <PrivacyToggleInput
+                    type="checkbox"
+                    checked={isPrivate}
+                    onChange={(e) => setIsPrivate(e.target.checked)}
+                  />
+                  <PrivacyToggleSlider $isPrivate={isPrivate} />
+                  <PrivacyToggleText $isPrivate={isPrivate}>{isPrivate ? "🔒 나만보기" : "🌍 공개"}</PrivacyToggleText>
+                </PrivacyToggleLabel>
+                <PrivacyDescription>
+                  {isPrivate ? "이 포스트는 나에게만 보입니다" : "이 포스트는 모든 사용자에게 공개됩니다"}
+                </PrivacyDescription>
+              </PrivacyToggleContainer>
               {/* 대표이미지 선택 UI */}
               {renderBestImageSelector()}
 
@@ -1120,7 +1137,59 @@ export const FormPage = () => {
   );
 };
 
-// 스타일 컴포넌트들
+const PrivacyToggleContainer = styled.div`
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background-color: var(--Back-Color);
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+`;
+
+const PrivacyToggleLabel = styled.label`
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  gap: 0.75rem;
+`;
+
+const PrivacyToggleInput = styled.input`
+  display: none;
+`;
+
+const PrivacyToggleSlider = styled.div`
+  position: relative;
+  width: 3rem;
+  height: 1.5rem;
+  background-color: ${(props) => (props.$isPrivate ? "#3b82f6" : "#d1d5db")};
+  border-radius: 0.75rem;
+  transition: background-color 0.2s;
+
+  &::after {
+    content: "";
+    position: absolute;
+    top: 0.125rem;
+    left: ${(props) => (props.$isPrivate ? "1.375rem" : "0.125rem")};
+    width: 1.25rem;
+    height: 1.25rem;
+    background-color: white;
+    border-radius: 50%;
+    transition: left 0.2s;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+`;
+
+const PrivacyToggleText = styled.span`
+  font: var(--Body-M);
+  font-weight: 600;
+  color: ${(props) => (props.$isPrivate ? "#3b82f6" : "#6b7280")};
+`;
+
+const PrivacyDescription = styled.p`
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-style: italic;
+`;
 const ModalOverlay = styled.div`
   position: fixed;
   top: 0;

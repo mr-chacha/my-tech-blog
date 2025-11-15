@@ -3,8 +3,10 @@ import styled from "styled-components";
 import {CalendarSVG} from "@public/Icon";
 import {useCustomNav} from "@/common/util";
 import defaultImage from "@public/chacha-dev.png";
+import {useZustandStore} from "@/common/store";
 
 export const RecentPostLists = ({recentPostLists}) => {
+  const {userInfo} = useZustandStore();
   // 날짜 포맷팅 함수
   const formatDate = (timestamp) => {
     if (!timestamp) return "";
@@ -29,6 +31,7 @@ export const RecentPostLists = ({recentPostLists}) => {
           <LatestPostItem>
             <ImageContainer>
               {latestPost.isRecommended && <RecommendedBadge>추천</RecommendedBadge>}
+              {userInfo && latestPost.isPrivate && <PrivateBadge>🔒</PrivateBadge>}
               <PostImage
                 src={latestPost.image || defaultImage}
                 alt="thumbnail"
@@ -86,6 +89,28 @@ export const RecentPostLists = ({recentPostLists}) => {
   );
 };
 
+const PrivateBadge = styled.div`
+  position: absolute;
+  left: 0.25rem;
+  top: 0.25rem;
+  z-index: 15;
+  border-radius: 0.125rem;
+  background-color: #6b7280;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #fafaf9;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+
+  @media (max-width: 640px) {
+    position: static;
+    display: inline-flex;
+    margin-right: 0.5rem;
+    padding: 0.125rem 0.375rem;
+  }
+`;
 const MainContainer = styled.div`
   margin: 0 auto;
   width: 100%;
