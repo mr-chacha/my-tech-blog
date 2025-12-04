@@ -196,8 +196,13 @@ export const DetailPage = () => {
   const getDetailPost = async (detailId) => {
     try {
       const response = await fetchDetailPost(detailId);
+      // 나만보기 포스트이고 관리자가 아닌 경우 메인 페이지로 리다이렉션
+      if (response.isPrivate && !userInfo) {
+        navigate("/");
+        setIsLoading(false);
+        return;
+      }
       setDetailPost(response);
-      console.log("response", response);
       const contentToc = tocFromMarkdown(response.content);
       setTocItems(contentToc);
     } catch (error) {
