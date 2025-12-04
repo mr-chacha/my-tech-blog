@@ -37,7 +37,7 @@ export const AboutPage = () => {
   return (
     <Container>
       <FlexContainer>
-        {/* 프로필 섹션 */}
+        {/* 프로필 섹션 */
         <ProfileSection>
           <ProfileImageWrapper>
             <ProfileImage>
