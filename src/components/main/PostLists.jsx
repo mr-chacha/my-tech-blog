@@ -60,29 +60,51 @@ export const PostLists = ({postLists}) => {
 
     let date;
 
-    // Firebase Timestamp 객체 (seconds, nanoseconds 구조)
-    if (timestamp && typeof timestamp === "object" && timestamp.seconds) {
-      date = new Date(timestamp.seconds * 1000);
-    }
-    // toDate() 메서드가 있는 경우
-    else if (timestamp.toDate) {
-      date = timestamp.toDate();
-    }
-    // 이미 Date 객체인 경우
-    else if (timestamp instanceof Date) {
-      date = timestamp;
-    }
-    // ISO 문자열인 경우
-    else if (typeof timestamp === "string") {
-      date = new Date(timestamp);
-    }
+    try {
+      // Firebase Timestamp 객체 - seconds 속성
+      if (timestamp && typeof timestamp === "object" && timestamp.seconds) {
+        date = new Date(timestamp.seconds * 1000);
+      }
+      // Firebase Timestamp 객체 - _seconds 속성 (언더스코어)
+      else if (timestamp && typeof timestamp === "object" && timestamp._seconds) {
+        date = new Date(timestamp._seconds * 1000);
+      }
+      // toDate() 메서드가 있는 경우
+      else if (timestamp && typeof timestamp.toDate === "function") {
+        date = timestamp.toDate();
+      }
+      // 이미 Date 객체인 경우
+      else if (timestamp instanceof Date) {
+        date = timestamp;
+      }
+      // ISO 문자열인 경우
+      else if (typeof timestamp === "string") {
+        date = new Date(timestamp);
+      }
+      // 숫자 (Unix timestamp milliseconds)
+      else if (typeof timestamp === "number") {
+        date = new Date(timestamp);
+      } else {
+        console.warn("Unknown timestamp format:", timestamp);
+        return "";
+      }
 
-    // 날짜를 한글 형식으로 변환
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
+      // date가 유효한지 확인
+      if (!date || isNaN(date.getTime())) {
+        console.warn("Invalid date:", timestamp);
+        return "";
+      }
 
-    return `${year}년 ${month}월 ${day}일`;
+      // 날짜를 한글 형식으로 변환
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+
+      return `${year}년 ${month}월 ${day}일`;
+    } catch (error) {
+      console.error("formatDate error:", error, "timestamp:", timestamp);
+      return "";
+    }
   };
 
   // 빈 배열인 경우 처리

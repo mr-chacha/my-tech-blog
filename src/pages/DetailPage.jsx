@@ -197,7 +197,6 @@ export const DetailPage = () => {
     try {
       const response = await fetchDetailPost(detailId);
       setDetailPost(response);
-      console.log("response", response);
       const contentToc = tocFromMarkdown(response.content);
       setTocItems(contentToc);
     } catch (error) {
@@ -260,12 +259,19 @@ export const DetailPage = () => {
     navigate(`/form?id=${detailId}`);
   };
 
+  // 나만보기 포스트 접근 제한
   useEffect(() => {
     if (detailId) {
       setIsLoading(true);
       getDetailPost(detailId);
     }
   }, [detailId]);
+
+  useEffect(() => {
+    if (detailPost?.published === false && !userInfo) {
+      navigate("/");
+    }
+  }, [userInfo, detailPost?.published]);
 
   // 현재 스크롤 위치를 감지해 toc의 활성화 상태관리
   useEffect(() => {
