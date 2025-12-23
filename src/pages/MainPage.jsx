@@ -1,9 +1,8 @@
-import {db} from "@/server/firebase";
 import styled from "styled-components";
 import React, {useEffect, useState} from "react";
 import {useZustandStore} from "@/common/store";
 import {PostLists, RecentPostLists} from "@/components/main";
-import {collection, getDocs, orderBy, query} from "firebase/firestore"; // where 제거
+import {useBlogApis} from "@/common/apis";
 import {useSEO, getCurrentURL} from "@/common/seo";
 
 export const MainPage = () => {
@@ -17,30 +16,21 @@ export const MainPage = () => {
     type: "website",
   });
 
-  const {setIsLoading, userInfo} = useZustandStore(); // userInfo 추가
-
+  const {fetchPosts} = useBlogApis();
+  const {setIsLoading, userInfo} = useZustandStore();
   const [recentPostLists, setRecentPostLists] = useState([]);
   const [postLists, setPostLists] = useState([]);
 
   const fetchPostData = async () => {
     try {
       setIsLoading(true);
-      // 모든 포스트를 가져온 후 클라이언트에서 필터링 (인덱스 에러 방지)
-      const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
+      const allPosts = await fetchPosts(); // 서버 API 호출
 
-      const postData = await getDocs(q);
-      const allPosts = postData.docs.map((doc) => ({id: doc.id, ...doc.data()}));
-
-      // 클라이언트에서 필터링: 관리자면 모든 포스트, 일반 사용자면 공개 포스트만
-      const filteredPosts = userInfo
-        ? allPosts // 관리자는 모든 포스트 (비공개 포함)
-        : allPosts.filter((post) => post.published !== false); // 일반 사용자는 공개 포스트만
-
-      if (filteredPosts.length > 5) {
-        setRecentPostLists(filteredPosts.slice(0, 5));
-        setPostLists(filteredPosts.slice(5));
+      if (allPosts.length > 5) {
+        setRecentPostLists(allPosts.slice(0, 5));
+        setPostLists(allPosts.slice(5));
       } else {
-        setRecentPostLists(filteredPosts);
+        setRecentPostLists(allPosts);
         setPostLists([]);
       }
     } catch (error) {

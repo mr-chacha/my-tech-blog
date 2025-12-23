@@ -568,7 +568,7 @@ export const FormPage = () => {
         const folderName = tempFile.isVideo ? "videos" : "images";
         const fileName = `${folderName}/${timestamp}_${randomId}.${fileExtension}`;
 
-        const downloadURL = await postImage(fileName, tempFile);
+        const downloadURL = await postImage(fileName, tempFile.file);
 
         if (tempFile.isVideo) {
           // 동영상용 정규식으로 교체
@@ -692,7 +692,7 @@ export const FormPage = () => {
       } else {
         // 등록 모드: 새로운 포스트 생성
         postData.createdAt = serverTimestamp();
-        const response = await postPost("posts", postData);
+        const response = await postPost(postData);
         nav(`/post/${response.id}`);
       }
       setModalMessage({
