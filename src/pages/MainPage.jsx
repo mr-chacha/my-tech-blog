@@ -26,11 +26,55 @@ export const MainPage = () => {
       setIsLoading(true);
       const allPosts = await fetchPosts(); // 서버 API 호출
 
-      if (allPosts.length > 5) {
-        setRecentPostLists(allPosts.slice(0, 5));
-        setPostLists(allPosts.slice(5));
+      // updatedAt 기준으로 정렬 (최신순)
+      const sortedPosts = [...allPosts].sort((a, b) => {
+        const getTimestamp = (post) => {
+          // Firestore Timestamp 객체 처리 (_seconds 속성)
+          if (post.updatedAt?._seconds) {
+            return post.updatedAt._seconds * 1000 + (post.updatedAt._nanoseconds || 0) / 1000000;
+          }
+          // Firestore Timestamp 객체의 toDate 메서드 처리
+          if (post.updatedAt?.toDate) {
+            return post.updatedAt.toDate().getTime();
+          }
+          // seconds 속성 처리 (언더스코어 없는 경우)
+          if (post.updatedAt?.seconds) {
+            return post.updatedAt.seconds * 1000;
+          }
+          // Date 객체 처리
+          if (post.updatedAt instanceof Date) {
+            return post.updatedAt.getTime();
+          }
+          // createdAt으로 fallback (_seconds 우선)
+          if (post.createdAt?._seconds) {
+            return post.createdAt._seconds * 1000 + (post.createdAt._nanoseconds || 0) / 1000000;
+          }
+          if (post.createdAt?.toDate) {
+            return post.createdAt.toDate().getTime();
+          }
+          if (post.createdAt?.seconds) {
+            return post.createdAt.seconds * 1000;
+          }
+          if (post.createdAt instanceof Date) {
+            return post.createdAt.getTime();
+          }
+          // 타임스탬프가 없으면 가장 오래된 것으로 처리
+          return 0;
+        };
+
+        const timeA = getTimestamp(a);
+        const timeB = getTimestamp(b);
+
+        // 내림차순 정렬 (최신이 먼저)
+        return timeB - timeA;
+      });
+
+      // 최신 5개를 최근 게시물로 설정
+      if (sortedPosts.length > 5) {
+        setRecentPostLists(sortedPosts.slice(0, 5));
+        setPostLists(sortedPosts.slice(5));
       } else {
-        setRecentPostLists(allPosts);
+        setRecentPostLists(sortedPosts);
         setPostLists([]);
       }
     } catch (error) {
