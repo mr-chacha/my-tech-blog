@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/firebase-admin";
+import { getDb } from "@/lib/firebase-admin";
 import { verifyToken, isAdmin } from "@/lib/auth";
 
 // GET /api/firebase/posts/:id - 포스트 상세 조회
 export async function GET(request, { params }) {
   try {
     const { id } = params;
-    const doc = await db.collection("posts").doc(id).get();
+    const doc = await getDb().collection("posts").doc(id).get();
 
     if (!doc.exists) {
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
@@ -29,7 +29,7 @@ export async function PUT(request, { params }) {
 
     const { id } = params;
     const updateData = await request.json();
-    await db.collection("posts").doc(id).update({
+    await getDb().collection("posts").doc(id).update({
       ...updateData,
       updatedAt: new Date(),
     });
@@ -50,7 +50,7 @@ export async function DELETE(request, { params }) {
     }
 
     const { id } = params;
-    await db.collection("posts").doc(id).delete();
+    await getDb().collection("posts").doc(id).delete();
 
     return NextResponse.json({ message: "Post deleted successfully" });
   } catch (error) {

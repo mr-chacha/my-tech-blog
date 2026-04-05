@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/firebase-admin";
+import { getDb } from "@/lib/firebase-admin";
 import { verifyToken, isAdmin } from "@/lib/auth";
 
 // GET /api/firebase/posts - 전체 포스트 조회
@@ -7,7 +7,7 @@ export async function GET(request) {
   try {
     const user = await verifyToken(request);
 
-    const snapshot = await db.collection("posts").orderBy("createdAt", "desc").get();
+    const snapshot = await getDb().collection("posts").orderBy("createdAt", "desc").get();
     let posts = snapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
@@ -34,7 +34,7 @@ export async function POST(request) {
     }
 
     const postData = await request.json();
-    const docRef = await db.collection("posts").add({
+    const docRef = await getDb().collection("posts").add({
       ...postData,
       createdAt: new Date(),
       updatedAt: new Date(),
