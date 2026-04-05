@@ -1,0 +1,1 @@
+export { GitHubComment } from "./GitHubComment";
