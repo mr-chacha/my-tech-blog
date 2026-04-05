@@ -1,5 +1,7 @@
 import { getDb } from "@/lib/firebase-admin";
-import DetailClient from "./DetailClient";
+import dynamic from "next/dynamic";
+
+const DetailClient = dynamic(() => import("./DetailClient"), { ssr: false });
 
 const BASE_URL = "https://chacha-dev.com";
 const DEFAULT_IMAGE = `${BASE_URL}/chacha-dev.png`;
