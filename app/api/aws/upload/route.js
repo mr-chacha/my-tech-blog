@@ -3,9 +3,9 @@ import AWS from "aws-sdk";
 import { verifyToken, isAdmin } from "@/lib/auth";
 
 AWS.config.update({
-  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  region: process.env.AWS_REGION,
+  accessKeyId: process.env.S3_ACCESS_KEY_ID,
+  secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
+  region: process.env.S3_REGION,
 });
 
 const s3 = new AWS.S3();
@@ -27,7 +27,7 @@ export async function POST(request) {
     const buffer = Buffer.from(fileData, "base64");
 
     const uploadParams = {
-      Bucket: process.env.AWS_BUCKET_NAME,
+      Bucket: process.env.S3_BUCKET_NAME,
       Key: fileName,
       Body: buffer,
       ContentType: fileType,
