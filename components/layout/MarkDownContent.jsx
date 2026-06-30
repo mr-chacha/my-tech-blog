@@ -1,17 +1,18 @@
 "use client";
-import React from "react";
+import React, { useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkBreaks from "remark-breaks";
 import rehypeSlug from "rehype-slug";
 import styled from "styled-components";
 import { marked } from "marked";
+import { addHeadingIdsToHtml } from "@/common/util";
 
-export const MarkDownContent = ({ content, tempFiles = [], isPreview = false }) => {
-  if (!content) {
-    return null;
-  }
+marked.setOptions({
+  breaks: true,
+});
 
+export const MarkDownContent = ({ content, tempFiles = [], isPreview = false, contentRef }) => {
   const convertTempImagesToPreview = (markdownContent) => {
     let convertedContent = markdownContent;
 
@@ -25,12 +26,12 @@ export const MarkDownContent = ({ content, tempFiles = [], isPreview = false }) 
     return convertedContent;
   };
 
-  const preprocessMarkdown = (content) => {
-    if (!content || typeof content !== "string") {
+  const preprocessMarkdown = (markdown) => {
+    if (!markdown || typeof markdown !== "string") {
       return "";
     }
 
-    const sections = content.split(/\n\s*\n/);
+    const sections = markdown.split(/\n\s*\n/);
     return sections
       .map((section) => {
         const lines = section.split("\n");
@@ -54,23 +55,30 @@ export const MarkDownContent = ({ content, tempFiles = [], isPreview = false }) 
       .join("\n\n");
   };
 
-  marked.setOptions({
-    breaks: true,
-  });
+  const processedContent = useMemo(() => {
+    if (!content) return "";
+    return preprocessMarkdown(convertTempImagesToPreview(content));
+  }, [content, tempFiles]);
 
-  const hasHtmlTags = content.includes("<video") || content.includes("<table");
+  const hasHtmlTags = Boolean(content?.includes("<video") || content?.includes("<table"));
+
+  const htmlContent = useMemo(() => {
+    if (!hasHtmlTags || !processedContent) return "";
+    return addHeadingIdsToHtml(marked(processedContent));
+  }, [hasHtmlTags, processedContent]);
+
+  if (!content) {
+    return null;
+  }
 
   if (hasHtmlTags) {
-    const processedContent = preprocessMarkdown(convertTempImagesToPreview(content));
-    const htmlContent = marked(processedContent);
-
-    return <ContentWrapper dangerouslySetInnerHTML={{ __html: htmlContent }} />;
+    return <ContentWrapper ref={contentRef} dangerouslySetInnerHTML={{ __html: htmlContent }} />;
   }
 
   return (
-    <ContentWrapper>
+    <ContentWrapper ref={contentRef}>
       <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} rehypePlugins={[rehypeSlug]}>
-        {preprocessMarkdown(convertTempImagesToPreview(content))}
+        {processedContent}
       </ReactMarkdown>
     </ContentWrapper>
   );

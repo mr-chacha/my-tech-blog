@@ -2,9 +2,9 @@
 import styled from "styled-components";
 import { useBlogApis } from "@/common/apis";
 import { useParams, useRouter } from "next/navigation";
-import { formatTimestamp } from "@/common/util";
+import { formatTimestamp, buildTocFromDom } from "@/common/util";
 import { useZustandStore } from "@/common/store";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { GitHubComment } from "@/components/detail";
 import { MarkDownContent } from "@/components/layout";
 import { CalendarSVG, LinkCopySVG, ReplySVG, ScrollTopSVG } from "@/components/icons";
@@ -19,6 +19,7 @@ export default function DetailPage() {
   const [tocItems, setTocItems] = useState([]);
   const [activeId, setActiveId] = useState("");
   const [isScrollingToTarget, setIsScrollingToTarget] = useState(false);
+  const contentRef = useRef(null);
 
   const handleTocClick = (e, href) => {
     e.preventDefault();
@@ -117,59 +118,10 @@ export default function DetailPage() {
     }
   };
 
-  const tocFromMarkdown = (markdownContent) => {
-    if (!markdownContent) return [];
-    const headingRegex = /^(?:>\s*)?(#{1,4})\s+(.+)$/gm;
-    const headings = [];
-    const titleCounts = {};
-    let match;
-
-    while ((match = headingRegex.exec(markdownContent)) !== null) {
-      const level = match[1].length;
-      let title = match[2].trim();
-
-      title = title.replace(/!\[[^\]]*\]\([^)]*\)/g, "");
-      title = title.replace(/\[([^\]]*)\]\([^)]*\)/g, "$1");
-      title = title.replace(/\*\*([^*]+)\*\*/g, "$1");
-      title = title.replace(/\*([^*]+)\*/g, "$1");
-      title = title.replace(/`([^`]+)`/g, "$1");
-      title = title.trim();
-
-      const baseId = title
-        .toLowerCase()
-        .replace(/\s+/g, "-")
-        .replace(/[^\w\u3131-\uD79D-]/g, "")
-        .replace(/--+/g, "-")
-        .replace(/^-|-$/g, "");
-
-      let uniqueId = baseId;
-      if (titleCounts[baseId]) {
-        titleCounts[baseId]++;
-        uniqueId = `${baseId}-${titleCounts[baseId]}`;
-      } else {
-        titleCounts[baseId] = 1;
-      }
-
-      const href = `#${uniqueId}`;
-
-      headings.push({
-        title,
-        href,
-        isSubItem: level > 1,
-        id: uniqueId,
-        level,
-      });
-    }
-
-    return headings;
-  };
-
   const getDetailPost = async (detailId) => {
     try {
       const response = await fetchDetailPost(detailId);
       setDetailPost(response);
-      const contentToc = tocFromMarkdown(response.content);
-      setTocItems(contentToc);
     } catch (error) {
       console.error("포스트 가져오기 오류:", error);
     } finally {
@@ -240,6 +192,15 @@ export default function DetailPage() {
       router.push("/");
     }
   }, [userInfo, detailPost?.published]);
+
+  useLayoutEffect(() => {
+    if (!detailPost?.content) {
+      setTocItems([]);
+      return;
+    }
+
+    setTocItems(buildTocFromDom(contentRef.current));
+  }, [detailPost?.content]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -325,8 +286,8 @@ export default function DetailPage() {
       <MobileNavSection>
         <MobileNavTitle>On this page</MobileNavTitle>
         <MobileNavList>
-          {tocItems.map((item, index) => (
-            <MobileNavItem key={index} $isSubItem={item.isSubItem}>
+          {tocItems.map((item) => (
+            <MobileNavItem key={item.id} $isSubItem={item.isSubItem}>
               <MobileNavLink
                 href={item.href}
                 $isActive={activeId.split(",").includes(item.id)}
@@ -346,8 +307,8 @@ export default function DetailPage() {
             <SidebarContainer>
               <SidebarTitle>On this page</SidebarTitle>
               <SidebarList>
-                {tocItems.map((item, index) => (
-                  <SidebarItem key={index} $isSubItem={item.isSubItem}>
+                {tocItems.map((item) => (
+                  <SidebarItem key={item.id} $isSubItem={item.isSubItem}>
                     <SidebarLink
                       href={item.href}
                       $isActive={activeId.split(",").includes(item.id)}
@@ -373,7 +334,7 @@ export default function DetailPage() {
             </ActionButtonsContainer>
           </SidebarSection>
         </SidebarLayout>
-        <MarkDownContent content={detailPost?.content} tempFiles={[]} isPreview={false} />
+        <MarkDownContent content={detailPost?.content} tempFiles={[]} isPreview={false} contentRef={contentRef} />
       </DetailBodySection>
 
       <GitHubComment postId={detailId} postTitle={detailPost?.title} />
