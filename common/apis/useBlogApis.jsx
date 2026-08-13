@@ -41,6 +41,26 @@ export const useBlogApis = () => {
     return await apiClient.delete(`/firebase/posts/${postId}`);
   };
 
+  const fetchPortfolio = async () => {
+    return await apiClient.get("/firebase/portfolio");
+  };
+
+  const fetchPortfolioItem = async (id) => {
+    return await apiClient.get(`/firebase/portfolio/${id}`);
+  };
+
+  const createPortfolio = async (data) => {
+    return await apiClient.post("/firebase/portfolio", data);
+  };
+
+  const updatePortfolio = async (id, data) => {
+    return await apiClient.put(`/firebase/portfolio/${id}`, data);
+  };
+
+  const deletePortfolio = async (id) => {
+    return await apiClient.delete(`/firebase/portfolio/${id}`);
+  };
+
   const postImage = async (fileName, file) => {
     try {
       const reader = new FileReader();
@@ -71,5 +91,10 @@ export const useBlogApis = () => {
     gutHubLogin,
     deletePost,
     updatePost,
+    fetchPortfolio,
+    fetchPortfolioItem,
+    createPortfolio,
+    updatePortfolio,
+    deletePortfolio,
   };
 };

@@ -3,7 +3,7 @@ import { useZustandStore } from "@/common/store";
 import { GlobalText } from "@/common/style";
 import { GitHubSVG, MoonSVG, SunSVG } from "@/components/icons";
 import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import styled from "styled-components";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase-client";
@@ -13,6 +13,19 @@ export const Header = () => {
   const [scrollProgress, setScrollProgress] = useState(0);
   const [headerMenu, setHeaderMenu] = useState("list");
   const router = useRouter();
+  const pathname = usePathname();
+
+  useEffect(() => {
+    if (pathname?.startsWith("/portfolio")) {
+      setHeaderMenu("portfolio");
+    } else if (pathname?.startsWith("/about")) {
+      setHeaderMenu("about");
+    } else if (pathname?.startsWith("/form")) {
+      setHeaderMenu("post");
+    } else {
+      setHeaderMenu("list");
+    }
+  }, [pathname]);
 
   const navHandler = (path, value) => {
     setHeaderMenu(value);
@@ -90,6 +103,17 @@ export const Header = () => {
             }}
           >
             About
+          </NavTitle>
+          <NavTitle
+            className="header-title"
+            font="var(--Body-M)"
+            $isActive={headerMenu === "portfolio"}
+            onClick={(e) => {
+              e.preventDefault();
+              navHandler("/portfolio", "portfolio");
+            }}
+          >
+            Portfolio
           </NavTitle>
           {userInfo && (
             <NavTitle
