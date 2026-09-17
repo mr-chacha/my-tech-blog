@@ -1,14 +1,6 @@
 import { NextResponse } from "next/server";
-import AWS from "aws-sdk";
 import { verifyToken, isAdmin } from "@/lib/auth";
-
-AWS.config.update({
-  accessKeyId: process.env.S3_ACCESS_KEY_ID,
-  secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
-  region: process.env.S3_REGION,
-});
-
-const s3 = new AWS.S3();
+import { getS3Client, getS3Bucket } from "@/lib/s3";
 
 // DELETE /api/aws/delete - 이미지 S3 삭제 (관리자 전용)
 export async function DELETE(request) {
@@ -19,13 +11,18 @@ export async function DELETE(request) {
     }
 
     const { fileName } = await request.json();
+    const bucket = getS3Bucket();
+    if (!bucket) {
+      return NextResponse.json({ error: "S3 bucket is not configured" }, { status: 500 });
+    }
 
-    const deleteParams = {
-      Bucket: process.env.S3_BUCKET_NAME,
-      Key: fileName,
-    };
-
-    await s3.deleteObject(deleteParams).promise();
+    const s3 = getS3Client();
+    await s3
+      .deleteObject({
+        Bucket: bucket,
+        Key: fileName,
+      })
+      .promise();
 
     return NextResponse.json({ message: "Image deleted successfully" });
   } catch (error) {
