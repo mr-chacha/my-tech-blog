@@ -1,14 +1,13 @@
 "use client";
 import React, {useState} from "react";
+import Link from "next/link";
 import styled from "styled-components";
-import {useCustomNav} from "@/common/util";
 import {useZustandStore} from "@/common/store";
 
 const defaultImage = "/chacha-dev.png";
 
 export const PostLists = ({postLists}) => {
   const {userInfo} = useZustandStore();
-  const navHandler = useCustomNav();
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
@@ -196,7 +195,7 @@ export const PostLists = ({postLists}) => {
       <PostListsSection>
         <PostGrid>
           {filteredPosts.map((post) => (
-            <PostBox key={post.id} onClick={() => navHandler(`/post/${post.id}`)}>
+            <PostBox key={post.id} href={`/post/${post.id}`}>
               <PostCard>
                 <ImageContainer>
                   <PostImage
@@ -320,13 +319,14 @@ const PostGrid = styled.ul`
   }
 `;
 
-const PostBox = styled.div`
+const PostBox = styled(Link)`
   height: 100%;
   text-decoration: none;
   color: inherit;
   border: 1px solid var(--Border-Color);
   border-radius: 0.375rem;
   cursor: pointer;
+  display: block;
 `;
 
 const PostCard = styled.li`

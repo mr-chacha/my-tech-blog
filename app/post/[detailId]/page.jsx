@@ -1,60 +1,41 @@
-import { getDb } from "@/lib/firebase-admin";
-import dynamic from "next/dynamic";
+import DetailClient from "./DetailClient";
+import {
+  BASE_URL,
+  DEFAULT_IMAGE,
+  getPostById,
+  isPublicPost,
+  timestampToDate,
+  truncateDescription,
+} from "@/lib/posts";
 
-const DetailClient = dynamic(() => import("./DetailClient"), { ssr: false });
-
-const BASE_URL = "https://chacha-dev.com";
-const DEFAULT_IMAGE = `${BASE_URL}/chacha-dev.png`;
-
-async function getPost(detailId) {
-  try {
-    const doc = await getDb().collection("posts").doc(detailId).get();
-    if (!doc.exists) return null;
-    return { id: doc.id, ...doc.data() };
-  } catch {
-    return null;
-  }
-}
-
-function getTimestamp(ts) {
-  if (!ts) return undefined;
-  if (ts._seconds) return new Date(ts._seconds * 1000).toISOString();
-  if (ts.toDate) return ts.toDate().toISOString();
-  if (ts.seconds) return new Date(ts.seconds * 1000).toISOString();
-  if (ts instanceof Date) return ts.toISOString();
-  return undefined;
-}
-
-function truncate(text, max = 160) {
-  if (!text) return "";
-  const plain = text.replace(/[#*`_~\[\]()!]/g, "").replace(/\n/g, " ").trim();
-  return plain.length > max ? plain.slice(0, max - 3) + "..." : plain;
-}
+export const revalidate = 60;
 
 export async function generateMetadata({ params }) {
-  const post = await getPost(params.detailId);
+  const post = await getPostById(params.detailId);
 
   if (!post) {
     return {
       title: "포스트를 찾을 수 없습니다 | 차차의 개발블로그",
       description: "요청하신 포스트를 찾을 수 없습니다.",
+      robots: { index: false, follow: false },
     };
   }
 
   const title = post.title || "차차의 개발블로그";
-  const description = truncate(post.content);
+  const description = truncateDescription(post.content) || "프론트엔드 개발자 차차의 기술 블로그입니다.";
   const image = post.image || post.bestImage || DEFAULT_IMAGE;
   const url = `${BASE_URL}/post/${params.detailId}`;
-  const publishedTime = getTimestamp(post.createdAt);
-  const modifiedTime = getTimestamp(post.updatedAt);
+  const publishedTime = timestampToDate(post.createdAt)?.toISOString();
+  const modifiedTime = timestampToDate(post.updatedAt)?.toISOString();
+  const publicPost = isPublicPost(post);
 
   return {
     title: `${title} | 차차의 개발블로그`,
     description,
-    keywords: [
-      "개발블로그", "프론트엔드", "웹개발", "차차",
-      post.category, ...(post.tags || []),
-    ].filter(Boolean).join(", "),
+    robots: publicPost ? { index: true, follow: true } : { index: false, follow: false },
+    keywords: ["개발블로그", "프론트엔드", "웹개발", "차차", post.category, ...(post.tags || [])]
+      .filter(Boolean)
+      .join(", "),
     authors: [{ name: "차차" }],
     openGraph: {
       type: "article",
@@ -88,6 +69,51 @@ export async function generateMetadata({ params }) {
   };
 }
 
-export default function DetailPage() {
-  return <DetailClient />;
+export default async function DetailPage({ params }) {
+  const post = await getPostById(params.detailId);
+
+  if (!post) {
+    return <DetailClient initialPost={null} />;
+  }
+
+  const url = `${BASE_URL}/post/${params.detailId}`;
+  const image = post.image || post.bestImage || DEFAULT_IMAGE;
+  const description = truncateDescription(post.content) || post.title;
+  const publishedTime = timestampToDate(post.createdAt)?.toISOString();
+  const modifiedTime = timestampToDate(post.updatedAt)?.toISOString();
+
+  const jsonLd = isPublicPost(post)
+    ? {
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        headline: post.title,
+        description,
+        image,
+        url,
+        datePublished: publishedTime,
+        dateModified: modifiedTime || publishedTime,
+        author: {
+          "@type": "Person",
+          name: post.author || "차차",
+        },
+        publisher: {
+          "@type": "Person",
+          name: "차차",
+        },
+        mainEntityOfPage: {
+          "@type": "WebPage",
+          "@id": url,
+        },
+        keywords: [post.category, ...(post.tags || [])].filter(Boolean).join(", "),
+      }
+    : null;
+
+  return (
+    <>
+      {jsonLd && (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      )}
+      <DetailClient initialPost={post} />
+    </>
+  );
 }

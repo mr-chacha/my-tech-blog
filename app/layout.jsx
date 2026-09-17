@@ -1,5 +1,8 @@
 import StyledComponentsRegistry from "@/components/StyledComponentsRegistry";
 import AppLayout from "@/components/AppLayout";
+import GoogleAnalytics from "@/components/GoogleAnalytics";
+
+const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
 export const metadata = {
   title: "차차의 개발블로그 | 완벽한 개발자를 꿈꾸는 프론트엔드 개발자",
@@ -61,6 +64,7 @@ export default function RootLayout({ children }) {
         <StyledComponentsRegistry>
           <AppLayout>{children}</AppLayout>
         </StyledComponentsRegistry>
+        <GoogleAnalytics measurementId={GA_MEASUREMENT_ID} />
       </body>
     </html>
   );

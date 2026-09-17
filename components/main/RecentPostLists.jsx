@@ -1,15 +1,14 @@
 "use client";
 import React from "react";
+import Link from "next/link";
 import styled from "styled-components";
 import {CalendarSVG} from "@/components/icons";
-import {useCustomNav} from "@/common/util";
 import {useZustandStore} from "@/common/store";
 
 const defaultImage = "/chacha-dev.png";
 
 export const RecentPostLists = ({recentPostLists}) => {
   const {userInfo} = useZustandStore();
-  // 날짜 포맷팅 함수
   // 날짜 포맷팅 함수
   const formatDate = (timestamp) => {
     if (!timestamp) return "";
@@ -63,7 +62,6 @@ export const RecentPostLists = ({recentPostLists}) => {
     }
   };
 
-  const navHandler = useCustomNav();
   const latestPost = recentPostLists[0];
 
   return (
@@ -71,14 +69,14 @@ export const RecentPostLists = ({recentPostLists}) => {
       {/* 최신 게시물 섹션 */}
       <LatestSection>
         <SectionTitle>최신 게시물</SectionTitle>
-        <LatestPostCard onClick={() => navHandler(`/post/${latestPost.id}`)}>
+        <LatestPostCard href={`/post/${latestPost.id}`}>
           <LatestPostItem>
             <ImageContainer>
               {latestPost.isRecommended && <RecommendedBadge>추천</RecommendedBadge>}
               {userInfo && latestPost.isPrivate && <PrivateBadge>🔒</PrivateBadge>}
               <PostImage
                 src={latestPost.image || defaultImage}
-                alt="thumbnail"
+                alt={latestPost.title || "thumbnail"}
                 onError={(e) => {
                   e.target.src = defaultImage;
                 }}
@@ -107,7 +105,7 @@ export const RecentPostLists = ({recentPostLists}) => {
           <SectionTitle>다른 게시물들</SectionTitle>
           <RecommendedPostsList>
             {recentPostLists.slice(1, 5).map((post) => (
-              <RecommendedPostCard key={post.id} onClick={() => navHandler(`/post/${post.id}`)}>
+              <RecommendedPostCard key={post.id} href={`/post/${post.id}`}>
                 <RecommendedPostItem>
                   <RecommendedPostContent>
                     <PostInfo>
@@ -200,9 +198,12 @@ const SectionTitle = styled.h2`
     font-size: 1.5rem;
   }
 `;
-const LatestPostCard = styled.div`
+const LatestPostCard = styled(Link)`
   height: 100%;
   cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  display: block;
 `;
 
 const LatestPostItem = styled.li`
@@ -379,10 +380,13 @@ const RecommendedPostsList = styled.div`
   flex: 1;
 `;
 
-const RecommendedPostCard = styled.div`
+const RecommendedPostCard = styled(Link)`
   flex: 1;
   height: 100%;
   cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  display: block;
 `;
 
 const RecommendedPostItem = styled.li`

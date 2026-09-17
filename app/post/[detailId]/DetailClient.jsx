@@ -8,14 +8,14 @@ import React, { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { GitHubComment } from "@/components/detail";
 import { MarkDownContent } from "@/components/layout";
 import { CalendarSVG, LinkCopySVG, ReplySVG, ScrollTopSVG } from "@/components/icons";
-export default function DetailPage() {
+export default function DetailPage({ initialPost = null }) {
   const { detailId } = useParams();
   const router = useRouter();
   const { fetchDetailPost, deletePost } = useBlogApis();
   const { userInfo, setActiveModal, setModalMessage, setModalButton, setModalConfirmHandler, setIsLoading } =
     useZustandStore();
 
-  const [detailPost, setDetailPost] = useState("");
+  const [detailPost, setDetailPost] = useState(initialPost || "");
   const [tocItems, setTocItems] = useState([]);
   const [activeId, setActiveId] = useState("");
   const [isScrollingToTarget, setIsScrollingToTarget] = useState(false);
@@ -181,11 +181,18 @@ export default function DetailPage() {
   };
 
   useEffect(() => {
-    if (detailId) {
-      setIsLoading(true);
-      getDetailPost(detailId);
+    if (!detailId) return;
+
+    // 서버에서 받은 초기 데이터가 있으면 추가 로딩을 생략
+    if (initialPost?.id === detailId) {
+      setDetailPost(initialPost);
+      setIsLoading(false);
+      return;
     }
-  }, [detailId]);
+
+    setIsLoading(true);
+    getDetailPost(detailId);
+  }, [detailId, initialPost]);
 
   useEffect(() => {
     if (detailPost?.published === false && !userInfo) {
