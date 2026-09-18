@@ -67,8 +67,7 @@ export default function HomeClient({ initialRecentPosts = [], initialPostLists =
       setPostLists(rest);
     } catch (error) {
       console.error("포스트 데이터 가져오기 실패:", error);
-      setRecentPostLists([]);
-      setPostLists([]);
+      // API가 깨져도 SSR로 받은 공개 글은 유지 (빈 화면/hydration 악화 방지)
     } finally {
       setIsLoading(false);
     }

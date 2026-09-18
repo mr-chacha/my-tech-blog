@@ -20,8 +20,16 @@ export async function GET(request) {
 
     return NextResponse.json(posts);
   } catch (error) {
-    console.error("Get posts error:", error);
-    return NextResponse.json({ error: "Failed to fetch posts" }, { status: 500 });
+    console.error("Get posts error:", error?.message || error);
+    return NextResponse.json(
+      {
+        error: "Failed to fetch posts",
+        code: "FIREBASE_ADMIN_ERROR",
+        // 시크릿은 절대 포함하지 않음. Amplify 로그의 message로 원인 확인.
+        hint: "Check Amplify env: FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY_BASE64",
+      },
+      { status: 500 }
+    );
   }
 }
 
