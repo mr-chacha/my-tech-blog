@@ -1,97 +1,47 @@
-# Amplify 환경변수 가이드 (Firebase Admin 안전 설정)
+# Amplify 환경변수 가이드 (Firebase Admin)
 
-`next.config.js`의 `env`에 서버 비밀키를 넣지 않습니다.  
-Amplify **Hosting → Environment variables**에만 등록하고, 서버 코드의 `process.env`로만 읽습니다.
+## 현재 이 프로젝트의 동작 방식
 
----
+Amplify Hosting(Next.js SSR/API)에서는 콘솔에 env를 넣어도 **요청 시점 런타임에 시크릿이 비는 경우**가 있습니다.  
+그래서 `next.config.js`의 `env`로 **빌드 시 서버 번들에 주입**합니다. (로컬 `.env` / Amplify 콘솔 값 → 빌드 → API·SSR에서 사용)
 
-## 왜 배포만 깨졌는가
-
-| 환경 | 동작 |
-|------|------|
-| 로컬 | `.env` → Next가 자동 로드 → OK |
-| Amplify (예전) | `next.config env`가 빌드 시 키를 서버 번들에 인라인 → OK (노출 위험) |
-| Amplify (지금) | 런타임 `process.env`만 사용 → **키가 SSR/API에 안 들어오거나 줄바꿈이 깨지면 500** |
-
-`GET /api/firebase/posts` 가 500이면 Firebase Admin 초기화 실패입니다.
-
----
-
-## 필수 서버 환경변수
-
-Amplify 콘솔에 아래를 **모두** 등록한 뒤 **재배포**하세요.
+기존에 쓰던 **한 줄 `FIREBASE_PRIVATE_KEY` 그대로** 쓰면 됩니다. Base64로 바꿀 필요 없습니다.
 
 ```text
 FIREBASE_PROJECT_ID=...
-FIREBASE_CLIENT_EMAIL=...@....iam.gserviceaccount.com
-FIREBASE_PRIVATE_KEY_BASE64=...   # 권장
+FIREBASE_CLIENT_EMAIL=...
+FIREBASE_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n
 ADMIN_EMAIL=...
 ```
 
-공개용(`NEXT_PUBLIC_*`)은 기존처럼 유지하면 됩니다.  
-GA는 `NEXT_PUBLIC_GA_MEASUREMENT_ID`를 추가하세요.
+## 주의 (보안)
 
-> `next.config.js`의 `env { FIREBASE_PRIVATE_KEY: ... }` 로 되돌리지 마세요.  
-> 클라이언트 번들에 인라인될 수 있습니다.
-
----
-
-## Private Key — Amplify에서 가장 안전한 방법 (권장)
-
-줄바꿈(`\n`)이 Amplify에서 깨지는 경우가 많습니다.  
-**BASE64로 한 줄** 만들어 넣는 방식을 권장합니다.
-
-### 1) 로컬에서 Base64 만들기 (macOS)
-
-PEM 파일(`-----BEGIN PRIVATE KEY-----` …)이 있다면:
+- `NEXT_PUBLIC_` 으로 서버 키를 올리지 말 것
+- 클라이언트 코드에서 `process.env.FIREBASE_PRIVATE_KEY` 등을 **참조하지 말 것**
+- 배포 후 확인: 클라이언트 번들에 키 문자열이 없어야 함
 
 ```bash
-base64 -i path/to/private_key.pem | tr -d '\n'
-echo
+# 로컬 빌드 후 (키가 나오면 안 됨)
+rg -l "BEGIN PRIVATE KEY" .next/static || echo "OK: not in client static"
 ```
 
-또는 이미 `.env`에 있는 키 문자열(실제 개행 포함)을 파일로 저장한 뒤 위 명령 실행.
+## API 장애 시
 
-### 2) Amplify에 등록
+`GET /api/firebase/posts` 가 500이면 응답의 `envStatus`로 **어떤 변수 이름만 비었는지** 확인합니다. (값은 안 나옴)
 
-- 이름: `FIREBASE_PRIVATE_KEY_BASE64`
-- 값: 위에서 나온 **한 줄** 문자열 (따옴표 없이)
-
-기존 `FIREBASE_PRIVATE_KEY`는 있어도 되지만, Base64가 있으면 코드가 그걸 우선 사용합니다.
-
-### 3) 재배포
-
-환경변수 변경 후 Amplify에서 **Redeploy this version** 또는 새 커밋 배포.
-
----
-
-## 기존 `FIREBASE_PRIVATE_KEY`를 그대로 쓸 때
-
-한 줄 + `\n` 이스케이프 형태여야 합니다.
-
-```text
------BEGIN PRIVATE KEY-----\nMIIE...\n-----END PRIVATE KEY-----\n
+```json
+{
+  "code": "FIREBASE_ADMIN_ERROR",
+  "envStatus": {
+    "FIREBASE_PROJECT_ID": true,
+    "FIREBASE_CLIENT_EMAIL": true,
+    "FIREBASE_PRIVATE_KEY": false
+  }
+}
 ```
 
-주의:
+전부 `true`인데도 실패하면 Amplify 로그의 `[firebase-admin]` 메시지를 확인하세요.
 
-- 값에 실제 Enter 개행이 섞이면 Amplify에서 잘릴 수 있음
-- 값 양끝의 `"` 가 포함되면 파싱 실패할 수 있음 (코드에서 일부 제거하지만 Base64가 더 안전)
+## 재배포
 
----
-
-## 배포 후 확인
-
-1. `https://your-domain/api/firebase/posts` → **200** + JSON 배열  
-2. 실패 시 응답에 `code: FIREBASE_ADMIN_ERROR` 와 hint가 옴 (키 값 자체는 없음)  
-3. Amplify **Hosting → Monitoring / Logs** 에서  
-   `[firebase-admin] Missing env` 또는 `Failed to initialize` 메시지 확인
-
----
-
-## 하지 말 것
-
-- `next.config.js` → `env`에 `FIREBASE_PRIVATE_KEY` 넣기  
-- `NEXT_PUBLIC_` 접두사로 서버 키 노출  
-- GitHub / PR / 이슈에 private key 붙여넣기  
-- 로그에 private key 출력하기
+Amplify 콘솔 env 변경 후에는 **반드시 재빌드/재배포**해야 `next.config` 주입이 반영됩니다.

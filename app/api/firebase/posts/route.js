@@ -21,12 +21,19 @@ export async function GET(request) {
     return NextResponse.json(posts);
   } catch (error) {
     console.error("Get posts error:", error?.message || error);
+    const envStatus = {
+      FIREBASE_PROJECT_ID: Boolean(process.env.FIREBASE_PROJECT_ID),
+      FIREBASE_CLIENT_EMAIL: Boolean(process.env.FIREBASE_CLIENT_EMAIL),
+      FIREBASE_PRIVATE_KEY: Boolean(process.env.FIREBASE_PRIVATE_KEY),
+      FIREBASE_PRIVATE_KEY_BASE64: Boolean(process.env.FIREBASE_PRIVATE_KEY_BASE64),
+    };
     return NextResponse.json(
       {
         error: "Failed to fetch posts",
         code: "FIREBASE_ADMIN_ERROR",
-        // 시크릿은 절대 포함하지 않음. Amplify 로그의 message로 원인 확인.
-        hint: "Check Amplify env: FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY_BASE64",
+        // 값(시크릿)은 절대 포함하지 않음. 존재 여부만.
+        envStatus,
+        hint: "Amplify에 FIREBASE_PROJECT_ID / FIREBASE_CLIENT_EMAIL / FIREBASE_PRIVATE_KEY 가 있는지 확인하고 재배포하세요.",
       },
       { status: 500 }
     );
