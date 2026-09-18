@@ -4,6 +4,18 @@ frontend:
     preBuild:
       commands:
         - npm ci
+        # 시크릿 값은 출력하지 않고, 빌드 시점에 변수 존재 여부만 확인
+        - |
+          echo "Checking required server env (names only)..."
+          test -n "$FIREBASE_PROJECT_ID" && echo "FIREBASE_PROJECT_ID=set" || echo "FIREBASE_PROJECT_ID=MISSING"
+          test -n "$FIREBASE_CLIENT_EMAIL" && echo "FIREBASE_CLIENT_EMAIL=set" || echo "FIREBASE_CLIENT_EMAIL=MISSING"
+          if [ -n "$FIREBASE_PRIVATE_KEY_BASE64" ]; then
+            echo "FIREBASE_PRIVATE_KEY_BASE64=set"
+          elif [ -n "$FIREBASE_PRIVATE_KEY" ]; then
+            echo "FIREBASE_PRIVATE_KEY=set (prefer FIREBASE_PRIVATE_KEY_BASE64 on Amplify)"
+          else
+            echo "FIREBASE_PRIVATE_KEY/BASE64=MISSING"
+          fi
     build:
       commands:
         - npm run build
