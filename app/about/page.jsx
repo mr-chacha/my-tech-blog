@@ -3,12 +3,24 @@ import React from "react";
 import styled from "styled-components";
 import {useZustandStore} from "@/common/store";
 const defaultImage = "/chacha-dev.png";
+const SKILLS = [
+  "TypeScript",
+  "React",
+  "Next.js",
+  "Vite",
+  "Cesium",
+  "Zustand",
+  "TanStack Query",
+  "React Router",
+  "Fastify",
+  "Turborepo",
+];
 
 export default function AboutPage() {
   const {setActiveModal, setModalMessage} = useZustandStore();
   const handleEmailCopy = async () => {
     try {
-      await navigator.clipboard.writeText("hoitcha@gmail.com");
+      await navigator.clipboard.writeText("hoitchac@gmail.com");
 
       setActiveModal({oneButtonModal: true});
       setModalMessage({
@@ -31,7 +43,7 @@ export default function AboutPage() {
         <ProfileSection>
           <ProfileInfo>
             <MainTitle>차상현</MainTitle>
-            <Description>완벽한 개발자를 꿈꾸는 프론트엔드 개발자</Description>
+            <Description>4년차 프론트엔드 개발자</Description>
             <LocationInfo>
               <LocationLink href="https://www.google.com/maps/place/suwon" target="_blank">
                 <GlobeIcon>
@@ -59,9 +71,17 @@ export default function AboutPage() {
                   <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
                 </MailIcon>
               </EmailButton>
+              <ResumeButton href="/resume/resume-2026.pdf" download="차상현_이력서_2026.pdf">
+                <DownloadIcon>
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" x2="12" y1="15" y2="3"></line>
+                </DownloadIcon>
+                이력서
+              </ResumeButton>
             </SocialLinks>
             <PrintEmailInfo>
-              <EmailLink href="">hoitchac@gmail.com</EmailLink>
+              <EmailLink href="mailto:hoitchac@gmail.com">hoitchac@gmail.com</EmailLink>
             </PrintEmailInfo>
           </ProfileInfo>
           <ProfileImage>
@@ -70,7 +90,10 @@ export default function AboutPage() {
         </ProfileSection>
         <AboutSection>
           <AboutTitle>About</AboutTitle>
-          <AboutDescription>더 완벽한 더 나은 개발자가 되기 위해 노력하는 개발자입니다.</AboutDescription>
+          <AboutDescription>
+            React 기반 서비스와 Cesium을 활용한 3D 드론 관제 시스템을 개발해 왔습니다.
+            {"\n"}기능 구현뿐 아니라 모노레포 마이그레이션, BFF 전환, 데이터 로딩 구조 및 공통 컴포넌트 개선을 경험했습니다.
+          </AboutDescription>
         </AboutSection>
         <WorkExperienceSection>
           <WorkTitle>Work Experience</WorkTitle>
@@ -83,15 +106,32 @@ export default function AboutPage() {
                       프리뉴
                     </CompanyLink>
                   </WorkCompany>
-                  <WorkPeriod>2024.08.01 ~ </WorkPeriod>
+                  <WorkPeriod>2024.08 ~ 재직중</WorkPeriod>
                 </WorkHeaderTop>
               </WorkHeader>
-              <CompanyDescription>드론 제조 및 관련 웹 플랫폼 기업</CompanyDescription>
+              <CompanyDescription>플랫폼 개발팀 · 드론 제조 및 관련 웹 플랫폼 기업</CompanyDescription>
               <JobTitle>Web Front-end Developer</JobTitle>
               <JobList>
-                <JobItem>드론 웹 플랫폼 HUB 개발</JobItem>
-                <JobItem>울주 드론 서비스 웹 플랫폼 개발</JobItem>
-                <JobItem>어드민 페이지 개발</JobItem>
+                <JobItem>마이크로 프론트엔드 코드를 pnpm workspace·Turborepo 기반 모노레포로 통합</JobItem>
+                <JobItem>Fastify BFF와 React Router Loader 기반으로 인증·데이터 로딩 구조 개선</JobItem>
+                <JobItem>드론 통합 관리 서비스 HUB 개발 (신규 디자인 개편, 비행 로그 분석·시각화, 다국어 지원)</JobItem>
+                <JobItem>Cesium 기반 3D 드론 관제 시스템 UTM 개발 (미션 설계, 군집비행, 오프라인 지형 고도, 기체 제어)</JobItem>
+                <JobItem>공공기관·군 고객사 맞춤 커스터마이징, 납품·통합 테스트·현장 이슈 대응</JobItem>
+                <JobItem>ERP·CS 사내 운영 서비스, 통합 어드민, TIPS SDR 정부과제 UI 개발</JobItem>
+              </JobList>
+            </WorkCard>
+            <WorkCard>
+              <WorkHeader>
+                <WorkHeaderTop>
+                  <WorkCompany>랩쓰리</WorkCompany>
+                  <WorkPeriod>2023.09 ~ 2024.08</WorkPeriod>
+                </WorkHeaderTop>
+              </WorkHeader>
+              <CompanyDescription>개발팀 · Next.js, TypeScript 기반 부동산·게임 플랫폼 MVP 개발</CompanyDescription>
+              <JobTitle>Web Front-end Developer</JobTitle>
+              <JobList>
+                <JobItem>게임 아이템 거래 서비스 TMO_GG: AWS IoT 기반 실시간 채팅, 거래 상태 관리, 반응형 UI</JobItem>
+                <JobItem>부동산 통합 플랫폼 리얼이지: 데스크탑 앱 배포·자동 업데이트, 50개 이상 Form 데이터 처리 개선</JobItem>
               </JobList>
             </WorkCard>
           </WorkContainer>
@@ -99,10 +139,9 @@ export default function AboutPage() {
         <SkillsSection>
           <SkillsTitle>Skills</SkillsTitle>
           <SkillsContainer>
-            <SkillBadge>Javascript</SkillBadge>
-            <SkillBadge>Typescript</SkillBadge>
-            <SkillBadge>React.js</SkillBadge>
-            <SkillBadge>Next.js</SkillBadge>
+            {SKILLS.map((skill) => (
+              <SkillBadge key={skill}>{skill}</SkillBadge>
+            ))}
           </SkillsContainer>
         </SkillsSection>
       </FlexContainer>
@@ -131,11 +170,14 @@ const SkillsContainer = styled.div`
 const SkillBadge = styled.div`
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   border-radius: 6px;
   border: 1px solid transparent;
-  padding: 0.125rem 0.5rem;
+  padding: 0.25rem 0.5rem;
   font-size: 0.75rem;
   font-weight: 600;
+  line-height: 1;
+  text-align: center;
   white-space: nowrap;
   transition: colors 0.2s;
   background: rgba(59, 130, 246, 0.8);
@@ -458,6 +500,13 @@ const EmailButton = styled.button`
   }
 `;
 
+const ResumeButton = styled(SocialButton)`
+  aspect-ratio: auto;
+  width: auto;
+  gap: 0.375rem;
+  padding: 0.5rem 0.75rem;
+`;
+
 const PrintEmailInfo = styled.div`
   display: none;
   flex-direction: column;
@@ -539,5 +588,7 @@ const MailIcon = styled.svg.attrs({
   width: 1rem;
   height: 1rem;
 `;
+
+const DownloadIcon = styled(MailIcon)``;
 
 const _Container = Container;
