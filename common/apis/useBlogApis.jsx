@@ -1,4 +1,5 @@
 "use client";
+import { validateMediaFile } from "@/common/util/media.mjs";
 import { auth } from "@/lib/firebase-client";
 import { GithubAuthProvider, signInWithPopup, signOut } from "firebase/auth";
 import { apiClient } from "./apiClient";
@@ -8,21 +9,20 @@ export const useBlogApis = () => {
     const provider = new GithubAuthProvider();
     const result = await signInWithPopup(auth, provider);
 
-    const response = await apiClient.post("/github/verify", {
-      email: result.user.email,
-    });
-
-    if (!response.isAdmin) {
-      alert("관리자 계정이 아닙니다");
+    try {
+      const response = await apiClient.post("/github/verify", {});
+      if (!response.isAdmin) throw new Error("관리자 계정이 아닙니다.");
+      await apiClient.post("/auth/session", {});
+    } catch (error) {
       await signOut(auth);
-      return null;
+      throw error;
     }
 
     return result;
   };
 
-  const fetchPosts = async () => {
-    return await apiClient.get("/firebase/posts");
+  const fetchPosts = async (options = {}) => {
+    return await apiClient.get(`/firebase/posts?${new URLSearchParams(options)}`);
   };
 
   const fetchDetailPost = async (detailId) => {
@@ -61,8 +61,9 @@ export const useBlogApis = () => {
     return await apiClient.delete(`/firebase/portfolio/${id}`);
   };
 
-  const postImage = async (fileName, file) => {
+  const postImage = async (file) => {
     try {
+      validateMediaFile(file);
       const reader = new FileReader();
       const base64 = await new Promise((resolve, reject) => {
         reader.onload = () => resolve(reader.result.split(",")[1]);
@@ -71,12 +72,11 @@ export const useBlogApis = () => {
       });
 
       const response = await apiClient.post("/aws/upload", {
-        fileName,
         fileType: file.type,
         fileData: base64,
       });
 
-      return response.url;
+      return response;
     } catch (error) {
       console.error("이미지 업로드 실패:", error);
       throw error;

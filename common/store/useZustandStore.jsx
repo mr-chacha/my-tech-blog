@@ -3,9 +3,11 @@ import { create } from "zustand";
 
 const useZustandStore = create((set) => ({
   // SSR 환경에서 localStorage에 접근하지 않도록 체크
-  isDarkMode: typeof window !== "undefined" && localStorage.getItem("isDarkMode") === "true" ? true : false,
+  isDarkMode: false,
   setIsDarkMode: (isDarkMode) => set({ isDarkMode }),
 
+  authReady: false,
+  setAuthReady: (authReady) => set({ authReady }),
   userInfo: null,
   setUserInfo: (userInfo) => set({ userInfo }),
 

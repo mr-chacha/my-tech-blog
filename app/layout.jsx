@@ -5,6 +5,7 @@ import GoogleAnalytics from "@/components/GoogleAnalytics";
 const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
 export const metadata = {
+  metadataBase: new URL("https://chacha-dev.com"),
   title: "차차의 개발블로그 | 완벽한 개발자를 꿈꾸는 프론트엔드 개발자",
   description: "프론트엔드 개발자 차차의 기술 블로그입니다.",
   keywords: "React, JavaScript, TypeScript, CSS, 프론트엔드, 개발블로그, 웹개발, 차차",

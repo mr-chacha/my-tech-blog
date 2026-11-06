@@ -5,6 +5,7 @@ import { GitHubSVG, MoonSVG, SunSVG } from "@/components/icons";
 import React, { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import styled from "styled-components";
+import { apiClient } from "@/common/apis/apiClient";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase-client";
 
@@ -43,6 +44,7 @@ export const Header = () => {
 
   const handleSignOut = async () => {
     try {
+      await apiClient.delete("/auth/session");
       await signOut(auth);
       setUserInfo(null);
       router.push("/");

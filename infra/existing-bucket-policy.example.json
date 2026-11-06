@@ -1,0 +1,21 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ExistingBlogMediaObjects",
+      "Effect": "Allow",
+      "Action": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
+      "Resource": [
+        "arn:aws:s3:::EXISTING_BLOG_BUCKET/images/*",
+        "arn:aws:s3:::EXISTING_BLOG_BUCKET/videos/*",
+        "arn:aws:s3:::EXISTING_BLOG_BUCKET/portfolio/*"
+      ]
+    },
+    {
+      "Sid": "VerifyExistingBucketPrivacy",
+      "Effect": "Allow",
+      "Action": ["s3:GetBucketPublicAccessBlock"],
+      "Resource": "arn:aws:s3:::EXISTING_BLOG_BUCKET"
+    }
+  ]
+}

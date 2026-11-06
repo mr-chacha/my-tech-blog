@@ -1,16 +1,13 @@
 "use client";
 import React, { useMemo } from "react";
-import ReactMarkdown from "react-markdown";
+import ReactMarkdown, { defaultUrlTransform } from "react-markdown";
+import rehypeRaw from "rehype-raw";
+import rehypeSanitize from "rehype-sanitize";
+import { markdownSchema } from "@/common/util/markdown-schema.mjs";
 import remarkGfm from "remark-gfm";
 import remarkBreaks from "remark-breaks";
 import rehypeSlug from "rehype-slug";
 import styled from "styled-components";
-import { marked } from "marked";
-import { addHeadingIdsToHtml } from "@/common/util";
-
-marked.setOptions({
-  breaks: true,
-});
 
 export const MarkDownContent = ({ content, tempFiles = [], isPreview = false, contentRef }) => {
   const convertTempImagesToPreview = (markdownContent) => {
@@ -60,24 +57,19 @@ export const MarkDownContent = ({ content, tempFiles = [], isPreview = false, co
     return preprocessMarkdown(convertTempImagesToPreview(content));
   }, [content, tempFiles]);
 
-  const hasHtmlTags = Boolean(content?.includes("<video") || content?.includes("<table"));
-
-  const htmlContent = useMemo(() => {
-    if (!hasHtmlTags || !processedContent) return "";
-    return addHeadingIdsToHtml(marked(processedContent));
-  }, [hasHtmlTags, processedContent]);
-
-  if (!content) {
-    return null;
-  }
-
-  if (hasHtmlTags) {
-    return <ContentWrapper ref={contentRef} dangerouslySetInnerHTML={{ __html: htmlContent }} />;
-  }
+  if (!content) return null;
+  const schema = isPreview ? {
+    ...markdownSchema,
+    protocols: { ...markdownSchema.protocols, src: [...markdownSchema.protocols.src, "data"] },
+  } : markdownSchema;
 
   return (
     <ContentWrapper ref={contentRef}>
-      <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} rehypePlugins={[rehypeSlug]}>
+      <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} rehypePlugins={[rehypeRaw, [rehypeSanitize, schema], [rehypeSlug, { prefix: "user-content-" }]]}
+        urlTransform={(url, key) => {
+          if (isPreview && key === "src" && /^data:(?:image\/(?:png|jpeg|gif|webp|avif)|video\/(?:mp4|webm|quicktime));base64,[A-Za-z0-9+/=]+$/.test(url)) return url;
+          return defaultUrlTransform(url);
+        }}>
         {processedContent}
       </ReactMarkdown>
     </ContentWrapper>

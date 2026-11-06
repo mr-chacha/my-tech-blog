@@ -1,12 +1,12 @@
 "use client";
-import {marked} from "marked";
+import { useMarkdownEditor } from "@/common/hooks/useMarkdownEditor";
+import { usePostMedia } from "@/common/hooks/usePostMedia";
+import TableEditorModal from "@/components/form/TableEditorModal";
+import { escapeHtml } from "@/common/util/security.mjs";
+import { MarkDownContent } from "@/components/layout";
 import styled from "styled-components";
 import {useBlogApis} from "@/common/apis";
 import {useSearchParams, useRouter} from "next/navigation";
-import {EditorState} from "@codemirror/state";
-import {EditorView, basicSetup} from "codemirror";
-import {serverTimestamp} from "firebase/firestore";
-import {markdown} from "@codemirror/lang-markdown";
 import React, {useRef, useEffect, useState} from "react";
 import {useZustandStore} from "@/common/store";
 
@@ -16,30 +16,29 @@ export default function FormContent() {
     {id: 1, value: "TypeScript"},
     {id: 3, value: "JavaScript"},
     {id: 4, value: "Next"},
-    {id: 4, value: "CSS"},
+    {id: 5, value: "CSS"},
     {id: 99, value: "직접입력"},
   ];
 
   const router = useRouter();
   const searchParams = useSearchParams();
-  const {userInfo, setActiveModal, setModalMessage, setModalConfirmHandler, isLoading, setIsLoading} =
+  const {userInfo, authReady, setActiveModal, setModalMessage, setModalConfirmHandler, isLoading, setIsLoading} =
     useZustandStore();
   const {postImage, postPost, fetchDetailPost, updatePost} = useBlogApis();
   const [title, setTitle] = useState("");
   const [activeTab, setActiveTab] = useState([]);
-  const [editorContent, setEditorContent] = useState("");
   const [category, setCategory] = useState("");
   const [categoryInput, setCategoryInput] = useState("");
-  const [tempFiles, setTempFiles] = useState([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const [bestImage, setBestImage] = useState("");
   const [existingImages, setExistingImages] = useState([]);
+  const [existingFiles, setExistingFiles] = useState([]);
 
   const [isEditMode, setIsEditMode] = useState(false);
   const [editPostId, setEditPostId] = useState(null);
   const [isPrivate, setIsPrivate] = useState(false);
 
-  // 표 관련 상태 추가
+  // 표 편집 상태
   const [showTableModal, setShowTableModal] = useState(false);
   const [tableData, setTableData] = useState([
     ["제목 1", "제목 2", "제목 3"],
@@ -48,36 +47,38 @@ export default function FormContent() {
   ]);
 
   const tagInputRef = useRef(null);
-  const editorRef = useRef(null);
   const isProcessingRef = useRef(false);
-  const editorViewRef = useRef(null);
+  const isSavingRef = useRef(false);
   const fileInputRef = useRef(null);
   const dropAreaRef = useRef(null);
+
+  const { content: editorContent, replaceContent: setEditorContent, editorRef, editorViewRef, insertText, insertHeading, insertList } = useMarkdownEditor(authReady && !!userInfo);
+  const { tempFiles, resetMedia, convertTempImagesToPreview, uploadImage, markSaved, handleFileUpload: addFiles } = usePostMedia(editorContent, insertText, postImage);
+  const handleFileUpload = async (files) => {
+    setIsLoading(true);
+    try { await addFiles(files); }
+    catch (error) { setModalMessage({ topMessage: error.message }); setActiveModal({ oneButtonModal: true }); }
+    finally { setIsLoading(false); }
+  };
 
   // 폼 초기화 함수
   const resetForm = () => {
     setTitle("");
     setCategory("");
+    setCategoryInput("");
     setActiveTab([]);
-    setTempFiles([]);
+    resetMedia();
     setEditorContent("");
     setBestImage("");
     setExistingImages([]);
+    setExistingFiles([]);
     setIsPrivate(false);
     setTableData([
       ["제목 1", "제목 2", "제목 3"],
       ["내용 1", "내용 2", "내용 3"],
       ["내용 4", "내용 5", "내용 6"],
     ]);
-    if (editorViewRef.current) {
-      editorViewRef.current.dispatch({
-        changes: {
-          from: 0,
-          to: editorViewRef.current.state.doc.length,
-          insert: "",
-        },
-      });
-    }
+
   };
 
   // 표 삽입 함수
@@ -94,7 +95,7 @@ export default function FormContent() {
     // 헤더 행
     tableHtml += "  <thead>\n    <tr>\n";
     tableData[0].forEach((cell) => {
-      tableHtml += `      <th>${cell}</th>\n`;
+      tableHtml += `      <th>${escapeHtml(cell)}</th>\n`;
     });
     tableHtml += "    </tr>\n  </thead>\n";
 
@@ -103,7 +104,7 @@ export default function FormContent() {
     tableData.slice(1).forEach((row) => {
       tableHtml += "    <tr>\n";
       row.forEach((cell) => {
-        tableHtml += `      <td>${cell}</td>\n`;
+        tableHtml += `      <td>${escapeHtml(cell)}</td>\n`;
       });
       tableHtml += "    </tr>\n";
     });
@@ -122,178 +123,6 @@ export default function FormContent() {
     });
 
     view.focus();
-  };
-
-  // 표 편집 모달
-  // 기존 코드에서 이 부분만 교체
-  const TableEditorModal = () => {
-    if (!showTableModal) return null;
-
-    const addRow = () => {
-      const newRow = Array(tableData[0].length).fill("");
-      setTableData([...tableData, newRow]);
-    };
-
-    const addColumn = () => {
-      setTableData(tableData.map((row) => [...row, ""]));
-    };
-
-    const deleteRow = (index) => {
-      if (tableData.length > 1) {
-        setTableData(tableData.filter((_, i) => i !== index));
-      }
-    };
-
-    const deleteColumn = (index) => {
-      if (tableData[0].length > 1) {
-        setTableData(tableData.map((row) => row.filter((_, i) => i !== index)));
-      }
-    };
-
-    const updateCell = (rowIndex, colIndex, value) => {
-      const newData = [...tableData];
-      newData[rowIndex][colIndex] = value;
-      setTableData(newData);
-    };
-
-    return (
-      <ModalOverlay onClick={() => setShowTableModal(false)}>
-        <ModalContent onClick={(e) => e.stopPropagation()}>
-          <ModalHeader>
-            <h3>표 편집</h3>
-            <CloseButton onClick={() => setShowTableModal(false)}>×</CloseButton>
-          </ModalHeader>
-
-          <ModalBody>
-            <div style={{marginBottom: "20px"}}>
-              <button
-                onClick={addRow}
-                style={{
-                  marginRight: "10px",
-                  padding: "8px 16px",
-                  backgroundColor: "#3b82f6",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "4px",
-                }}
-              >
-                + 행 추가
-              </button>
-              <button
-                onClick={addColumn}
-                style={{
-                  padding: "8px 16px",
-                  backgroundColor: "#3b82f6",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "4px",
-                }}
-              >
-                + 열 추가
-              </button>
-            </div>
-
-            <table style={{borderCollapse: "collapse", width: "100%"}}>
-              <thead>
-                <tr>
-                  {tableData[0].map((_, colIndex) => (
-                    <th
-                      key={colIndex}
-                      style={{
-                        border: "1px solid #e2e8f0",
-                        padding: "0",
-                        position: "relative",
-                        backgroundColor: "#f8fafc",
-                      }}
-                    >
-                      <input
-                        value={tableData[0][colIndex]}
-                        onChange={(e) => updateCell(0, colIndex, e.target.value)}
-                        placeholder="헤더"
-                        style={{
-                          border: "none",
-                          outline: "none",
-                          width: "100%",
-                          padding: "12px",
-                          background: "transparent",
-                        }}
-                      />
-                      <button
-                        onClick={() => deleteColumn(colIndex)}
-                        style={{
-                          position: "absolute",
-                          top: "4px",
-                          right: "4px",
-                          background: "#ef4444",
-                          color: "white",
-                          border: "none",
-                          borderRadius: "50%",
-                          width: "20px",
-                          height: "20px",
-                          fontSize: "12px",
-                        }}
-                      >
-                        ×
-                      </button>
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {tableData.slice(1).map((row, rowIndex) => (
-                  <tr key={rowIndex}>
-                    {row.map((cell, colIndex) => (
-                      <td key={colIndex} style={{border: "1px solid #e2e8f0", padding: "0"}}>
-                        <input
-                          value={cell}
-                          onChange={(e) => updateCell(rowIndex + 1, colIndex, e.target.value)}
-                          placeholder="내용"
-                          style={{
-                            border: "none",
-                            outline: "none",
-                            width: "100%",
-                            padding: "12px",
-                            background: "transparent",
-                          }}
-                        />
-                      </td>
-                    ))}
-                    <td style={{border: "1px solid #e2e8f0", padding: "0"}}>
-                      <button
-                        onClick={() => deleteRow(rowIndex + 1)}
-                        style={{
-                          background: "#ef4444",
-                          color: "white",
-                          border: "none",
-                          borderRadius: "50%",
-                          width: "20px",
-                          height: "20px",
-                          fontSize: "12px",
-                        }}
-                      >
-                        ×
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </ModalBody>
-
-          <ModalFooter>
-            <Button onClick={() => setShowTableModal(false)}>취소</Button>
-            <Button
-              onClick={() => {
-                insertTable();
-                setShowTableModal(false);
-              }}
-            >
-              삽입
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </ModalOverlay>
-    );
   };
 
   // 파일 입력 핸들러
@@ -341,71 +170,6 @@ export default function FormContent() {
     fileInputRef.current?.click();
   };
 
-  // 임시 파일명을 실제 URL로 변환하는 함수
-  const convertTempImagesToPreview = (markdownContent) => {
-    let convertedContent = markdownContent;
-
-    tempFiles.forEach((tempFile) => {
-      if (tempFile.isVideo) {
-        // 동영상용 정규식
-        const tempVideoRegex = new RegExp(
-          `<video controls width="100%">\\s*<source src="${tempFile.tempName}" type="${tempFile.type}">\\s*동영상을 재생할 수 없습니다\\.\\s*</video>`,
-          "g"
-        );
-        convertedContent = convertedContent.replace(
-          tempVideoRegex,
-          `<video controls width="100%"><source src="${tempFile.base64Url}" type="${tempFile.type}">동영상을 재생할 수 없습니다.</video>`
-        );
-      } else {
-        // 기존 이미지 처리 로직
-        const tempImageRegex = new RegExp(`!\\[([^\\]]*)\\]\\(${tempFile.tempName}\\)`, "g");
-        convertedContent = convertedContent.replace(tempImageRegex, `![$1](${tempFile.base64Url})`);
-      }
-    });
-
-    return convertedContent;
-  };
-
-  // velog 스타일 마크다운 삽입 함수들
-  const insertText = (before, after = "", placeholder = "") => {
-    if (!editorViewRef.current) return;
-
-    const view = editorViewRef.current;
-    const state = view.state;
-    const selection = state.selection.main;
-
-    const selectedText = state.doc.sliceString(selection.from, selection.to) || placeholder;
-    const newText = `${before}${selectedText}${after}`;
-
-    view.dispatch({
-      changes: {
-        from: selection.from,
-        to: selection.to,
-        insert: newText,
-      },
-      selection: {
-        anchor: selection.from + before.length,
-        head: selection.from + before.length + selectedText.length,
-      },
-    });
-
-    view.focus();
-  };
-
-  const insertHeading = (level) => {
-    if (!editorViewRef.current) return;
-
-    const view = editorViewRef.current;
-    const state = view.state;
-    const selection = state.selection.main;
-    const line = state.doc.lineAt(selection.from);
-
-    const isEmptyLine = line.text.trim() === "";
-    const prefix = (isEmptyLine ? "" : "\n") + "#".repeat(level) + " ";
-
-    insertText(prefix, "", "");
-  };
-
   const insertBold = () => insertText("**", "**", "");
   const insertItalic = () => insertText("*", "*", "");
   const insertStrike = () => insertText("~~", "~~", "");
@@ -413,32 +177,6 @@ export default function FormContent() {
   const insertCodeBlock = () => insertText("```\n", "\n```", "");
   const insertLink = () => insertText("[", "](https://)", "");
   const insertQuote = () => insertText("> ", "", "");
-  const insertList = () => {
-    if (!editorViewRef.current) return;
-
-    const view = editorViewRef.current;
-    const state = view.state;
-    const selection = state.selection.main;
-    const line = state.doc.lineAt(selection.from);
-
-    const lineStart = line.from;
-    const prefix = "- ";
-
-    view.dispatch({
-      changes: {
-        from: lineStart,
-        to: lineStart,
-        insert: prefix,
-      },
-      selection: {
-        anchor: lineStart + prefix.length,
-        head: lineStart + prefix.length,
-      },
-    });
-
-    view.focus();
-  };
-
   // 태그 관련 함수들
   const addTag = (value) => {
     const trimmedValue = value.trim();
@@ -474,137 +212,6 @@ export default function FormContent() {
 
   const removeTag = (indexToRemove) => {
     setActiveTab((prev) => prev.filter((_, index) => index !== indexToRemove));
-  };
-
-  // 마크다운을 HTML로 변환
-  const convertMarkdownToHtml = (markdownText) => {
-    try {
-      // 이미지들을 base64 URL로 변환한 후 HTML로 변환
-      const convertedContent = convertTempImagesToPreview(markdownText);
-      return marked(convertedContent);
-    } catch (error) {
-      return markdownText;
-    }
-  };
-
-  // 파일을 base64로 변환하는 함수
-  const fileToBase64 = (file) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-  };
-
-  // 이미지 추가 함수 base64로 변환
-  const handleFileUpload = async (files) => {
-    const mediaFiles = Array.from(files).filter(
-      (file) => file.type.startsWith("image/") || file.type.startsWith("video/")
-    );
-
-    if (mediaFiles.length === 0) {
-      alert("이미지 또는 동영상 파일만 업로드 가능합니다.");
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-
-      for (const file of mediaFiles) {
-        // 파일을 base64로 변환
-        const base64Url = await fileToBase64(file);
-
-        const timestamp = Date.now();
-        const tempId = `temp_${timestamp}_${file.name.replace(/\s+/g, "_")}`;
-
-        // 임시 파일 정보 저장
-        const tempFileInfo = {
-          id: tempId,
-          name: file.name,
-          tempName: tempId,
-          file: file,
-          base64Url: base64Url,
-          size: file.size,
-          type: file.type,
-          addedAt: new Date(),
-          isVideo: file.type.startsWith("video/"),
-        };
-
-        setTempFiles((prev) => [...prev, tempFileInfo]);
-        // insertText("![", `](${tempId})`, file.name.split(".")[0]);
-
-        // 동영상과 이미지에 따라 다른 마크다운 문법 사용
-        if (file.type.startsWith("video/")) {
-          // video 태그를 직접 삽입 (insertText의 before 매개변수에 전체 태그를 넣음)
-          const videoTag = `<video controls width="100%">
-  <source src="${tempId}" type="${file.type}">
-  동영상을 재생할 수 없습니다.
-</video>`;
-          insertText(videoTag, "", "");
-        } else {
-          insertText("![", `](${tempId})`, file.name.split(".")[0]);
-        }
-      }
-    } catch (error) {
-      console.error("이미지 처리 실패:", error);
-      alert("이미지 처리에 실패했습니다.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // 이미지 저장 API
-  const uploadImage = async () => {
-    if (tempFiles.length === 0) return {content: editorContent, files: []};
-
-    let updatedContent = editorContent;
-    const uploadedFileInfos = [];
-
-    for (const tempFile of tempFiles) {
-      try {
-        const timestamp = Date.now();
-        const randomId = Math.random().toString(36).substring(2, 15);
-        const fileExtension = tempFile.name.split(".").pop();
-        const folderName = tempFile.isVideo ? "videos" : "images";
-        const fileName = `${folderName}/${timestamp}_${randomId}.${fileExtension}`;
-
-        const downloadURL = await postImage(fileName, tempFile.file);
-
-        if (tempFile.isVideo) {
-          // 동영상용 정규식으로 교체
-          const tempVideoRegex = new RegExp(
-            `<video controls width="100%">\\s*<source src="${tempFile.tempName}" type="${tempFile.type}">\\s*동영상을 재생할 수 없습니다\\.\\s*</video>`,
-            "g"
-          );
-          updatedContent = updatedContent.replace(
-            tempVideoRegex,
-            `<video controls width="100%"><source src="${downloadURL}" type="${tempFile.type}">동영상을 재생할 수 없습니다.</video>`
-          );
-        } else {
-          // 기존 이미지 처리 로직
-          const tempImageRegex = new RegExp(`!\\[([^\\]]*)\\]\\(${tempFile.tempName}\\)`, "g");
-          updatedContent = updatedContent.replace(tempImageRegex, `![$1](${downloadURL})`);
-        }
-
-        const fileInfo = {
-          name: tempFile.name,
-          url: downloadURL,
-          path: fileName,
-          size: tempFile.size,
-          type: tempFile.type,
-          isVideo: tempFile.isVideo,
-          uploadedAt: new Date(),
-        };
-
-        uploadedFileInfos.push(fileInfo);
-      } catch (error) {
-        console.error(`파일 업로드 실패:`, error);
-        throw error;
-      }
-    }
-
-    return {content: updatedContent, files: uploadedFileInfos};
   };
 
   // 포스트 저장 API
@@ -650,19 +257,21 @@ export default function FormContent() {
   };
 
   const submit = async () => {
+    if (!authReady || !userInfo || isLoading || isSavingRef.current) return;
+    isSavingRef.current = true;
     try {
       setIsLoading(true);
 
-      // base64 이미지들을 Firebase Storage에 업로드하고 URL 교체
-      const {content: finalContent, files: uploadedFileInfos} = await uploadImage();
+      // 임시 미디어를 S3에 업로드하고 URL 교체
+      const {content: finalContent, files: uploadedFileInfos, image: selectedImage} = await uploadImage(bestImage);
 
       // 대표 이미지 설정
-      let representativeImage = bestImage;
+      let representativeImage = selectedImage;
 
-      if (uploadedFileInfos.length > 0) {
+      if (!representativeImage && uploadedFileInfos.length > 0) {
         representativeImage = uploadedFileInfos[0].url;
-      } else {
-        const imageRegex = /!\[.*?\]\((https?:\/\/[^\s\)]+)\)/;
+      } else if (!representativeImage) {
+        const imageRegex = /!\[.*?\]\(((?:https?:\/\/|\/api\/media\/)[^\s\)]+)\)/;
         const match = finalContent.match(imageRegex);
         representativeImage = match ? match[1] : null;
       }
@@ -670,20 +279,12 @@ export default function FormContent() {
         title: title.trim(),
         content: finalContent,
         category: category === "직접입력" ? categoryInput : category.trim(),
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        viewCount: 0,
-        likeCount: 0,
-        commentCount: 0,
-        bestImage: bestImage || null,
+        bestImage: selectedImage || null,
         image: representativeImage || null,
-        isRecommended: false,
-        file: uploadedFileInfos || [],
+        file: [...existingFiles.filter((file) => finalContent.includes(file.url)), ...uploadedFileInfos],
         tags: activeTab || [],
         published: !isPrivate,
         isPrivate: isPrivate,
-        author: "차차",
-        authorId: userInfo?.uid,
       };
 
       // 수정 모드와 등록 모드 구분
@@ -692,7 +293,6 @@ export default function FormContent() {
         router.push(`/post/${editPostId}`);
       } else {
         // 등록 모드: 새로운 포스트 생성
-        postData.createdAt = serverTimestamp();
         const response = await postPost(postData);
         router.push(`/post/${response.id}`);
       }
@@ -704,12 +304,12 @@ export default function FormContent() {
         twoButtonModal: false,
       });
 
-      // 폼 초기화
+      markSaved();
       resetForm();
     } catch (error) {
       console.log(`포스트 ${isEditMode ? "수정" : "저장"}에 실패했습니다.`, error);
       setModalMessage({
-        topMessage: "포스트 저장에 실패했습니다.",
+        topMessage: error.message || "포스트 저장에 실패했습니다.",
       });
       setActiveModal({
         oneButtonModal: true,
@@ -722,20 +322,16 @@ export default function FormContent() {
         });
       });
     } finally {
+      isSavingRef.current = false;
       setIsLoading(false);
     }
   };
 
-  // marked 설정
-  marked.setOptions({
-    breaks: true,
-  });
-
-  // 수정 포스트 조회
-  const loadPostForEdit = async (postId) => {
+  const loadPostForEdit = async (postId, isCurrent) => {
     try {
       setIsLoading(true);
       const postData = await fetchDetailPost(postId);
+      if (!isCurrent()) return;
 
       // 폼에 기존 데이터 설정
       setTitle(postData.title || "");
@@ -743,11 +339,12 @@ export default function FormContent() {
       setActiveTab(postData.tags || []);
       setEditorContent(postData.content || "");
       setBestImage(postData.bestImage || "");
-      setIsPrivate(postData.isPrivate || false);
+      setIsPrivate(postData.published === false || postData.isPrivate === true);
 
       // 기존 이미지들 추출
       const extractedImages = extractImagesFromContent(postData.content || "");
       setExistingImages(extractedImages);
+      setExistingFiles(postData.file || []);
 
       // 카테고리가 기본 목록에 없으면 직접입력으로 설정
       const categoryExists = CATEGORY_LIST.some((cat) => cat.value === postData.category);
@@ -756,136 +353,37 @@ export default function FormContent() {
         setCategoryInput(postData.category);
       }
 
-      setTimeout(() => {
-        if (editorViewRef.current && postData.content) {
-          editorViewRef.current.dispatch({
-            changes: {
-              from: 0,
-              to: editorViewRef.current.state.doc.length,
-              insert: postData.content,
-            },
-          });
-        }
-      }, 100);
     } catch (error) {
-      console.error("포스트 로드 실패:", error);
+      if (isCurrent()) {
+        setModalMessage({ topMessage: "게시물을 불러오지 못했습니다.", bottomMessage: error.message });
+        setActiveModal({ oneButtonModal: true });
+        router.replace("/");
+      }
     } finally {
-      setIsLoading(false);
+      if (isCurrent()) setIsLoading(false);
     }
   };
 
-  useEffect(() => {
-    setIsLoading(true);
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-      if (!userInfo) {
-        router.push("/");
-      }
-    }, 1000);
 
-    return () => clearTimeout(timer);
-  }, [userInfo]);
 
-  // URL 쿼리 파라미터에서 수정할 포스트 ID 확인
   useEffect(() => {
-    setIsLoading(true);
+    if (!authReady) return;
+    if (!userInfo) { router.replace("/login"); return; }
     const postId = searchParams.get("id");
-
-    if (postId) {
-      setIsEditMode(true);
-      setEditPostId(postId);
-      loadPostForEdit(postId);
-      setIsLoading(false);
-    }
-  }, [searchParams]);
-
-  // 에디터 초기화
-  useEffect(() => {
-    if (editorRef.current) {
-      const state = EditorState.create({
-        doc: editorContent,
-        extensions: [
-          basicSetup,
-          markdown(),
-          EditorView.lineWrapping,
-          EditorView.theme({
-            "&": {
-              fontSize: "16px",
-            },
-            ".cm-content": {
-              padding: "20px",
-              minHeight: "400px",
-              fontFamily: "'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif",
-              lineHeight: "1.7",
-              wordBreak: "break-word",
-              whiteSpace: "pre-wrap",
-            },
-            ".cm-editor": {
-              border: "none",
-            },
-            ".cm-gutters": {
-              display: "none !important",
-              width: "0 !important",
-              minWidth: "0 !important",
-            },
-            ".cm-gutter": {
-              display: "none !important",
-              width: "0 !important",
-            },
-            ".cm-lineNumbers": {
-              display: "none !important",
-            },
-            ".cm-gutterElement": {
-              display: "none !important",
-            },
-            ".cm-scroller": {
-              fontFamily: "inherit",
-              paddingLeft: "0 !important",
-              marginLeft: "0 !important",
-            },
-            ".cm-editor .cm-scroller": {
-              paddingLeft: "0 !important",
-            },
-          }),
-          EditorView.updateListener.of((update) => {
-            if (update.docChanged) {
-              setEditorContent(update.state.doc.toString());
-            }
-          }),
-        ],
-      });
-
-      const view = new EditorView({
-        state,
-        parent: editorRef.current,
-      });
-      editorViewRef.current = view;
-
-      return () => {
-        view.destroy();
-      };
-    }
-  }, []);
-
-  useEffect(() => {
-    setIsLoading(true);
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-      if (!userInfo)
-        if (!userInfo) {
-          router.push("/");
-        }
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, [userInfo]);
+    setIsEditMode(Boolean(postId));
+    setEditPostId(postId);
+    let active = true;
+    if (postId) loadPostForEdit(postId, () => active);
+    else { resetForm(); setIsLoading(false); }
+    return () => { active = false; setIsLoading(false); };
+  }, [authReady, userInfo?.uid, searchParams, router]);
 
   // 마크다운에서 이미지 URL들을 추출하는 함수
   const extractImagesFromContent = (content) => {
     const files = [];
 
     // 기존 이미지 추출 로직
-    const imageRegex = /!\[.*?\]\((https?:\/\/[^\s\)]+)\)/g;
+    const imageRegex = /!\[.*?\]\(((?:https?:\/\/|\/api\/media\/)[^\s\)]+)\)/g;
     let match;
     while ((match = imageRegex.exec(content)) !== null) {
       const fileUrl = match[1];
@@ -903,7 +401,7 @@ export default function FormContent() {
     }
 
     // 동영상 추출 로직 추가
-    const videoRegex = /<video[^>]*>[\s\S]*?<source src="(https?:\/\/[^"]+)"[^>]*>[\s\S]*?<\/video>/g;
+    const videoRegex = /<video[^>]*>[\s\S]*?<source src="((?:https?:\/\/|\/api\/media\/)[^"]+)"[^>]*>[\s\S]*?<\/video>/g;
     while ((match = videoRegex.exec(content)) !== null) {
       const fileUrl = match[1];
       const fileName = fileUrl.split("/").pop() || "동영상";
@@ -943,8 +441,8 @@ export default function FormContent() {
             return (
               <BestImageOption
                 key={image.id}
-                onClick={() => handleBestImageSelect(imageUrl)}
-                $isSelected={bestImage === imageUrl}
+                onClick={() => handleBestImageSelect(image.type === "existing" ? image.url : image.tempName)}
+                $isSelected={bestImage === (image.type === "existing" ? image.url : image.tempName)}
               >
                 <BestImageThumbnail src={imageUrl} alt={imageName} />
                 <BestImageName>{imageName}</BestImageName>
@@ -957,9 +455,11 @@ export default function FormContent() {
     );
   };
 
+  if (!authReady || !userInfo) return <p role="status">인증 확인 중...</p>;
+
   return (
     <FormLayout>
-      <TableEditorModal />
+      <TableEditorModal open={showTableModal} tableData={tableData} setTableData={setTableData} onClose={() => setShowTableModal(false)} onInsert={insertTable} />
       <FormContainer
         ref={dropAreaRef}
         onDragEnter={handleDragEnter}
@@ -1049,7 +549,8 @@ export default function FormContent() {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*,video/*"
+                title="이미지/동영상 파일당 최대 3MB"
+                accept="image/jpeg,image/png,image/gif,image/webp,image/avif,video/mp4,video/webm,video/quicktime"
                 multiple
                 onChange={handleFileInputChange}
                 style={{display: "none"}}
@@ -1125,11 +626,7 @@ export default function FormContent() {
 
         <RightSection>
           <PreviewContainer>
-            <ContentWrapper
-              dangerouslySetInnerHTML={{
-                __html: convertMarkdownToHtml(editorContent),
-              }}
-            />
+            <MarkDownContent content={convertTempImagesToPreview(editorContent)} isPreview />
           </PreviewContainer>
         </RightSection>
       </FormContainer>
@@ -1189,69 +686,6 @@ const PrivacyDescription = styled.p`
   font-size: 0.875rem;
   color: #6b7280;
   font-style: italic;
-`;
-const ModalOverlay = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-`;
-
-const ModalContent = styled.div`
-  background: white;
-  border-radius: 8px;
-  padding: 20px;
-  max-width: 800px;
-  width: 90%;
-  max-height: 80vh;
-  overflow-y: auto;
-`;
-
-const ModalHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-`;
-
-const CloseButton = styled.button`
-  background: none;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-`;
-
-const ModalBody = styled.div`
-  margin-bottom: 20px;
-`;
-
-const ModalFooter = styled.div`
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-`;
-
-const Button = styled.button`
-  padding: 8px 16px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-
-  &:first-child {
-    background: #6c757d;
-    color: white;
-  }
-
-  &:last-child {
-    background: #007bff;
-    color: white;
-  }
 `;
 
 const ExistingImageBadge = styled.div`
@@ -1343,162 +777,6 @@ const BestImageName = styled.div`
   line-height: 1.2;
 `;
 
-const ContentWrapper = styled.div`
-  font-weight: 400;
-  line-height: 1rem;
-  background-color: var(--Content-Back-Color);
-  color: var(--Text-Color) !important;
-
-  p + h1,
-  p + h2,
-  p + h3,
-  p + h4 {
-    margin-top: 3rem;
-  }
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6 {
-    line-height: 1.4rem;
-    margin: 1rem 0 0.5rem 0;
-    font-weight: bold;
-    color: var(--Text-Color);
-  }
-
-  h1 {
-    font-size: 3rem;
-    line-height: 3rem;
-    margin-top: 1rem;
-    margin-bottom: 1rem;
-  }
-  h2 {
-    font-size: 2rem;
-    line-height: 2.5rem;
-    margin-top: 0.93em;
-    margin-bottom: 0.93em;
-  }
-  h3 {
-    font-size: 1.5rem;
-    line-height: 1.5rem;
-    margin-top: 0.83em;
-    margin-bottom: 0.83em;
-  }
-  h4 {
-    font-size: 1.125rem;
-    line-height: 1.5rem;
-    margin-top: 0.73em;
-    margin-bottom: 0.73em;
-  }
-
-  p {
-    font-size: 1rem;
-    margin-bottom: 0.75rem;
-    color: var(--Text-Color);
-    white-space: pre-line;
-    line-height: 1.2rem;
-  }
-
-  li {
-    font-size: 1rem;
-    margin-bottom: 0.25rem;
-  }
-
-  ul {
-    margin-top: 0.75rem;
-    margin-left: 1.5rem;
-    margin-bottom: 0.75rem;
-    list-style-type: disc;
-  }
-
-  strong {
-    font-weight: bold;
-    color: var(--Text-Color);
-  }
-
-  em {
-    font-style: italic;
-    color: var(--Text-Color);
-  }
-
-  img {
-    max-width: 100%;
-    height: auto;
-    display: block;
-    margin: 1.5rem auto;
-    border-radius: 8px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  }
-
-  code {
-    background: #f1f5f9;
-    padding: 3px 6px;
-    border-radius: 4px;
-    font-size: 0.875rem;
-    font-family: Monaco, Consolas, monospace;
-    background: var(--Code-Back-Color);
-    line-height: 1.5;
-  }
-
-  pre {
-    background: #f8fafc;
-    padding: 16px;
-    border-radius: 8px;
-    overflow: auto;
-    margin: 1.5rem 0;
-    border: 1px solid #e2e8f0;
-
-    code {
-      background: none;
-      padding: 0;
-      font-family: Monaco, Consolas, monospace;
-      font-size: 0.875rem;
-      line-height: 1.5;
-    }
-  }
-
-  a {
-    color: #3b82f6;
-    text-decoration: underline;
-
-    &:hover {
-      color: #2563eb;
-    }
-  }
-
-  blockquote {
-    border-left: 4px solid #3b82f6;
-    padding-left: 1rem;
-    margin: 0.75rem 0;
-    color: #6b7280;
-    background-color: #f8fafc;
-    padding: 1rem;
-    border-radius: 0.25rem;
-  }
-
-  del {
-    text-decoration: line-through;
-  }
-
-  table {
-    border-collapse: collapse;
-    width: 100%;
-    margin: 1.5rem 0;
-  }
-
-  th,
-  td {
-    border: 1px solid #e2e8f0;
-    padding: 12px;
-    text-align: left;
-  }
-
-  th {
-    background-color: #f8fafc;
-    font-weight: bold;
-  }
-`;
 
 const DragOverlay = styled.div`
   position: fixed;

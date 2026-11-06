@@ -1,0 +1,8 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // The browser uses Firebase Auth only. All document access goes through
+    // the server's verified API; Admin SDK access is controlled by IAM.
+    match /{document=**} { allow read, write: if false; }
+  }
+}

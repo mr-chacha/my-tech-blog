@@ -1,3 +1,4 @@
+import { serializeJsonLd } from "@/common/util/security.mjs";
 import DetailClient from "./DetailClient";
 import {
   BASE_URL,
@@ -11,6 +12,7 @@ import {
 export const revalidate = 60;
 
 export async function generateMetadata({ params }) {
+  params = await params;
   try {
     const post = await getPostById(params.detailId);
 
@@ -79,6 +81,7 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function DetailPage({ params }) {
+  params = await params;
   let post = null;
 
   try {
@@ -127,7 +130,7 @@ export default async function DetailPage({ params }) {
   return (
     <>
       {jsonLd && (
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />
       )}
       <DetailClient initialPost={post} />
     </>

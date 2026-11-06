@@ -125,3 +125,7 @@ dist
 *.pb
 
 .vscode/settings.json
+# All local/deployment environment variants; retain the sanitized template.
+.env.*
+!.env.local.example
+.backups/

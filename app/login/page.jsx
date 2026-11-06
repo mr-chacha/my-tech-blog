@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useEffect } from "react";
 import styled from "styled-components";
 import { GitHubSVG } from "@/components/icons";
 import { useBlogApis } from "@/common/apis";
@@ -11,11 +11,9 @@ export default function LoginPage() {
   const { gutHubLogin } = useBlogApis();
   const { isDarkMode, setUserInfo, userInfo } = useZustandStore();
 
-  // 이미 로그인된 경우 메인으로 리다이렉트
-  if (userInfo) {
-    router.push("/");
-    return null;
-  }
+  useEffect(() => {
+    if (userInfo) router.replace("/");
+  }, [userInfo, router]);
 
   const handleGitHubLogin = async () => {
     try {

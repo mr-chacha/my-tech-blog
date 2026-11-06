@@ -1,4 +1,5 @@
 "use client";
+import { safeHttpUrl } from "@/common/util/security.mjs";
 import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 import { useRouter } from "next/navigation";
@@ -12,12 +13,13 @@ const FILTERS = [
   { key: "app", label: "App" },
 ];
 
-export default function PortfolioPage({ initialItems = [] }) {
+export default function PortfolioPage({ initialItems = [], initialError = false }) {
   const router = useRouter();
   const { fetchPortfolio, deletePortfolio } = useBlogApis();
   const { userInfo, setIsLoading, setActiveModal, setModalMessage, setModalConfirmHandler } =
     useZustandStore();
   const [items, setItems] = useState(initialItems);
+  const [error, setError] = useState(initialError);
   const [filter, setFilter] = useState("all");
 
   const loadItems = async () => {
@@ -25,9 +27,10 @@ export default function PortfolioPage({ initialItems = [] }) {
       setIsLoading(true);
       const data = await fetchPortfolio();
       setItems(Array.isArray(data) ? data : []);
+      setError(false);
     } catch (error) {
       console.error("포트폴리오 조회 실패:", error);
-      setItems([]);
+      setError(true);
     } finally {
       setIsLoading(false);
     }
@@ -74,9 +77,9 @@ export default function PortfolioPage({ initialItems = [] }) {
 
   const getActionUrl = (item) => {
     if (item.type === "app") {
-      return item.downloadUrl || item.url || "";
+      return safeHttpUrl(item.downloadUrl || item.url);
     }
-    return item.url || "";
+    return safeHttpUrl(item.url);
   };
 
   const getCount = (key) => {
@@ -88,6 +91,7 @@ export default function PortfolioPage({ initialItems = [] }) {
 
   return (
     <Page>
+      {error && <p role="alert">포트폴리오를 불러오지 못했습니다. <button type="button" onClick={loadItems}>다시 시도</button></p>}
       <PageHeader>
         <TitleBlock>
           <PageTitle>Portfolio</PageTitle>
@@ -118,7 +122,7 @@ export default function PortfolioPage({ initialItems = [] }) {
         </TabList>
       )}
 
-      {items.length === 0 ? (
+      {error && items.length === 0 ? null : items.length === 0 ? (
         <Empty>
           <EmptyIcon>📁</EmptyIcon>
           <EmptyTitle>등록된 포트폴리오가 없습니다</EmptyTitle>
@@ -171,7 +175,7 @@ export default function PortfolioPage({ initialItems = [] }) {
                     </PrimaryLink>
                   )}
                   {item.githubUrl && (
-                    <SecondaryLink href={item.githubUrl} target="_blank" rel="noopener noreferrer">
+                    <SecondaryLink href={safeHttpUrl(item.githubUrl)} target="_blank" rel="noopener noreferrer">
                       GitHub
                     </SecondaryLink>
                   )}

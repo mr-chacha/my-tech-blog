@@ -1,4 +1,6 @@
 "use client";
+import { isPublicPost } from "@/common/util/post-data.mjs";
+import { NotFoundPage } from "@/common/ui";
 import styled from "styled-components";
 import { useBlogApis } from "@/common/apis";
 import { useParams, useRouter } from "next/navigation";
@@ -12,9 +14,10 @@ export default function DetailPage({ initialPost = null }) {
   const { detailId } = useParams();
   const router = useRouter();
   const { fetchDetailPost, deletePost } = useBlogApis();
-  const { userInfo, setActiveModal, setModalMessage, setModalButton, setModalConfirmHandler, setIsLoading } =
+  const { userInfo, authReady, setActiveModal, setModalMessage, setModalButton, setModalConfirmHandler } =
     useZustandStore();
 
+  const [isFetching, setIsFetching] = useState(!initialPost);
   const [detailPost, setDetailPost] = useState(initialPost || "");
   const [tocItems, setTocItems] = useState([]);
   const [activeId, setActiveId] = useState("");
@@ -118,17 +121,6 @@ export default function DetailPage({ initialPost = null }) {
     }
   };
 
-  const getDetailPost = async (detailId) => {
-    try {
-      const response = await fetchDetailPost(detailId);
-      setDetailPost(response);
-    } catch (error) {
-      console.error("포스트 가져오기 오류:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleDeletePost = () => {
     setActiveModal({ twoButtonModal: true });
     setModalMessage({
@@ -181,24 +173,20 @@ export default function DetailPage({ initialPost = null }) {
   };
 
   useEffect(() => {
-    if (!detailId) return;
-
-    // 서버에서 받은 초기 데이터가 있으면 추가 로딩을 생략
-    if (initialPost?.id === detailId) {
+    if (!detailId || !authReady) { setDetailPost(initialPost || ""); return; }
+    if (initialPost?.id === detailId && !userInfo) {
       setDetailPost(initialPost);
-      setIsLoading(false);
       return;
     }
-
-    setIsLoading(true);
-    getDetailPost(detailId);
-  }, [detailId, initialPost]);
-
-  useEffect(() => {
-    if (detailPost?.published === false && !userInfo) {
-      router.push("/");
-    }
-  }, [userInfo, detailPost?.published]);
+    if (!initialPost && !userInfo) { setDetailPost(""); setIsFetching(false); return; }
+    let cancelled = false;
+    setIsFetching(true);
+    fetchDetailPost(detailId)
+      .then((post) => { if (!cancelled) setDetailPost(post); })
+      .catch(() => { if (!cancelled) setDetailPost(initialPost || ""); })
+      .finally(() => { if (!cancelled) { setIsFetching(false); } });
+    return () => { cancelled = true; };
+  }, [detailId, initialPost, authReady, userInfo]);
 
   useLayoutEffect(() => {
     if (!detailPost?.content) {
@@ -262,6 +250,9 @@ export default function DetailPage({ initialPost = null }) {
       }
     };
   }, [tocItems, isScrollingToTarget]);
+
+  if (detailPost && !isPublicPost(detailPost) && !userInfo) return <NotFoundPage />;
+  if (!detailPost) return !authReady || isFetching ? <p role="status">인증 확인 중...</p> : <NotFoundPage />;
 
   return (
     <DetailPageLayout>

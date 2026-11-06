@@ -1,4 +1,5 @@
 "use client";
+import { formatPostDate } from "@/common/util/post-data.mjs";
 import React, {useState} from "react";
 import Link from "next/link";
 import styled from "styled-components";
@@ -6,120 +7,12 @@ import {useZustandStore} from "@/common/store";
 
 const defaultImage = "/chacha-dev.png";
 
-export const PostLists = ({postLists}) => {
+export const PostLists = ({ postLists, categories, selectedCategory, onCategoryChange, pending = false }) => {
   const {userInfo} = useZustandStore();
-  const [selectedCategory, setSelectedCategory] = useState("All");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-
-  // postLists를 기반으로 동적 카테고리 생성
-  const generateCategories = (posts) => {
-    if (!posts || posts.length === 0) {
-      return [{name: "All", count: 0}];
-    }
-
-    // 카테고리별 포스트 개수 계산
-    const categoryCount = {};
-    posts.forEach((post) => {
-      const category = post.category || "기타";
-      categoryCount[category] = (categoryCount[category] || 0) + 1;
-    });
-
-    // 카테고리 배열 생성
-    const categories = [{name: "All", count: posts.length}];
-    Object.entries(categoryCount)
-      .sort(([, a], [, b]) => b - a)
-      .forEach(([categoryName, count]) => {
-        categories.push({
-          name: categoryName,
-          count: count,
-        });
-      });
-
-    return categories;
-  };
-
-  const categories = generateCategories(postLists);
-
-  // 선택된 카테고리에 따른 포스트 필터링
-  const getFilteredPosts = () => {
-    if (!postLists) return [];
-
-    if (selectedCategory === "All") {
-      return postLists;
-    } else if (selectedCategory === "🔥추천") {
-      return postLists.filter((post) => post.isRecommended);
-    } else {
-      return postLists.filter((post) => post.category === selectedCategory);
-    }
-  };
-
-  const filteredPosts = getFilteredPosts();
-
-  // 날짜 포맷팅 함수
-  const formatDate = (timestamp) => {
-    if (!timestamp) return "";
-
-    let date;
-
-    try {
-      // Firebase Timestamp 객체 - seconds 속성
-      if (timestamp && typeof timestamp === "object" && timestamp.seconds) {
-        date = new Date(timestamp.seconds * 1000);
-      }
-      // Firebase Timestamp 객체 - _seconds 속성 (언더스코어)
-      else if (timestamp && typeof timestamp === "object" && timestamp._seconds) {
-        date = new Date(timestamp._seconds * 1000);
-      }
-      // toDate() 메서드가 있는 경우
-      else if (timestamp && typeof timestamp.toDate === "function") {
-        date = timestamp.toDate();
-      }
-      // 이미 Date 객체인 경우
-      else if (timestamp instanceof Date) {
-        date = timestamp;
-      }
-      // ISO 문자열인 경우
-      else if (typeof timestamp === "string") {
-        date = new Date(timestamp);
-      }
-      // 숫자 (Unix timestamp milliseconds)
-      else if (typeof timestamp === "number") {
-        date = new Date(timestamp);
-      } else {
-        console.warn("Unknown timestamp format:", timestamp);
-        return "";
-      }
-
-      // date가 유효한지 확인
-      if (!date || isNaN(date.getTime())) {
-        console.warn("Invalid date:", timestamp);
-        return "";
-      }
-
-      // 날짜를 한글 형식으로 변환
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, "0");
-      const day = String(date.getDate()).padStart(2, "0");
-
-      return `${year}년 ${month}월 ${day}일`;
-    } catch (error) {
-      console.error("formatDate error:", error, "timestamp:", timestamp);
-      return "";
-    }
-  };
-
-  // 빈 배열인 경우 처리
-  if (!postLists || postLists.length === 0) {
-    return (
-      <PostListsSection>
-        <NoPostsMessage>더 많은 게시물이 곧 업데이트될 예정입니다!</NoPostsMessage>
-      </PostListsSection>
-    );
-  }
-
-  const handleCategoryClick = (categoryName) => {
-    setSelectedCategory(categoryName);
-  };
+  const filteredPosts = postLists;
+  const formatDate = formatPostDate;
+  const handleCategoryClick = onCategoryChange;
 
   const toggleDropdown = () => {
     setIsDropdownOpen(!isDropdownOpen);
@@ -136,14 +29,14 @@ export const PostLists = ({postLists}) => {
           <DesktopSection>
             <CategoryList>
               {categories.map((category) => (
-                <CategoryItem key={category.name}>
+                <CategoryItem key={category.key}>
                   <CategoryButton
-                    href={category.href}
-                    $isActive={selectedCategory === category.name}
-                    onClick={() => handleCategoryClick(category.name)}
+                    type="button"
+                    $isActive={selectedCategory === category.key}
+                    onClick={() => handleCategoryClick(category.key)}
                   >
                     {category.name}
-                    <CategoryCount $isActive={selectedCategory === category.name}>({category.count})</CategoryCount>
+                    <CategoryCount $isActive={selectedCategory === category.key}>({category.count})</CategoryCount>
                   </CategoryButton>
                 </CategoryItem>
               ))}
@@ -154,7 +47,7 @@ export const PostLists = ({postLists}) => {
           <MobileSection>
             <DropdownButton onClick={toggleDropdown}>
               <DropdownText>
-                {selectedCategory} ({categories.find((cat) => cat.name === selectedCategory)?.count})
+                {categories.find((cat) => cat.key === selectedCategory)?.name || "전체"} ({categories.find((cat) => cat.key === selectedCategory)?.count || 0})
               </DropdownText>
               <ChevronIcon $isOpen={isDropdownOpen}>
                 <svg
@@ -177,9 +70,9 @@ export const PostLists = ({postLists}) => {
               <DropdownMenu>
                 {categories.map((category) => (
                   <DropdownItem
-                    key={category.name}
+                    key={category.key}
                     onClick={() => {
-                      handleCategoryClick(category.name);
+                      handleCategoryClick(category.key);
                       setIsDropdownOpen(false);
                     }}
                   >
@@ -247,6 +140,8 @@ export const PostLists = ({postLists}) => {
             </PostBox>
           ))}
         </PostGrid>
+        {!pending && filteredPosts.length === 0 && <p role="status">이 카테고리에 게시물이 없습니다.</p>}
+
       </PostListsSection>
     </>
   );
@@ -549,7 +444,7 @@ const CategoryList = styled.ul`
 
 const CategoryItem = styled.li``;
 
-const CategoryButton = styled.a`
+const CategoryButton = styled.button`
   display: inline-flex;
   align-items: center;
   justify-content: center;

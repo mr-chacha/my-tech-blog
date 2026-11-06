@@ -1,102 +1,21 @@
 "use client";
 
+import { usePostFeed } from "@/common/hooks/usePostFeed";
 import styled from "styled-components";
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { useZustandStore } from "@/common/store";
 import { PostLists, RecentPostLists } from "@/components/main";
-import { useBlogApis } from "@/common/apis";
 
-function sortAndSplitPosts(allPosts) {
-  const sortedPosts = [...allPosts].sort((a, b) => {
-    const getTimestamp = (post) => {
-      if (post.updatedAt?._seconds) {
-        return post.updatedAt._seconds * 1000 + (post.updatedAt._nanoseconds || 0) / 1000000;
-      }
-      if (post.updatedAt?.toDate) {
-        return post.updatedAt.toDate().getTime();
-      }
-      if (post.updatedAt?.seconds) {
-        return post.updatedAt.seconds * 1000;
-      }
-      if (post.updatedAt instanceof Date) {
-        return post.updatedAt.getTime();
-      }
-      if (post.createdAt?._seconds) {
-        return post.createdAt._seconds * 1000 + (post.createdAt._nanoseconds || 0) / 1000000;
-      }
-      if (post.createdAt?.toDate) {
-        return post.createdAt.toDate().getTime();
-      }
-      if (post.createdAt?.seconds) {
-        return post.createdAt.seconds * 1000;
-      }
-      if (post.createdAt instanceof Date) {
-        return post.createdAt.getTime();
-      }
-      return 0;
-    };
-
-    return getTimestamp(b) - getTimestamp(a);
-  });
-
-  if (sortedPosts.length > 5) {
-    return {
-      recentPostLists: sortedPosts.slice(0, 5),
-      postLists: sortedPosts.slice(5),
-    };
-  }
-
-  return {
-    recentPostLists: sortedPosts,
-    postLists: [],
-  };
-}
-
-export default function HomeClient({ initialRecentPosts = [], initialPostLists = [] }) {
-  const { fetchPosts } = useBlogApis();
-  const { setIsLoading, userInfo } = useZustandStore();
-  const [recentPostLists, setRecentPostLists] = useState(initialRecentPosts);
-  const [postLists, setPostLists] = useState(initialPostLists);
-
-  const fetchPostData = async () => {
-    try {
-      setIsLoading(true);
-      const allPosts = await fetchPosts();
-      const { recentPostLists: recent, postLists: rest } = sortAndSplitPosts(allPosts);
-      setRecentPostLists(recent);
-      setPostLists(rest);
-    } catch (error) {
-      console.error("포스트 데이터 가져오기 실패:", error);
-      // API가 깨져도 SSR로 받은 공개 글은 유지 (빈 화면/hydration 악화 방지)
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    // 관리자 로그인 후 비공개 글 반영을 위해 클라이언트에서 재조회
-    if (userInfo) {
-      fetchPostData();
-    }
-  }, [userInfo]);
-
+export default function HomeClient({ initialPage, initialError = false }) {
+  const { userInfo, authReady } = useZustandStore();
+  const feed = usePostFeed(initialPage, initialError, userInfo, authReady);
   return (
     <MainLayout>
-      {recentPostLists.length > 0 ? (
-        <PostSection>
-          <RecentPostLists recentPostLists={recentPostLists} />
-          <MainHr />
-          <PostLists postLists={postLists} setPostLists={setPostLists} />
-        </PostSection>
-      ) : (
-        <NoPostsContainer>
-          <NoPostsMessage>
-            <NoPostsIcon>📝</NoPostsIcon>
-            <NoPostsTitle>아직 게시물이 없습니다</NoPostsTitle>
-            <NoPostsText>첫 번째 포스트를 작성해보세요!</NoPostsText>
-          </NoPostsMessage>
-        </NoPostsContainer>
-      )}
+      {feed.error && <p role="alert">{typeof feed.error === "string" ? feed.error : "게시물을 불러오지 못했습니다."} <button type="button" disabled={feed.loading} onClick={feed.retry}>다시 시도</button></p>}
+      {feed.recentPosts.length > 0 && <><RecentPostLists recentPostLists={feed.recentPosts} /><MainHr /></>}
+      <PostLists pending={feed.loading || !!feed.error} postLists={feed.posts} categories={[{ key: "", name: "전체", count: feed.total }, ...(feed.categories || [])]} selectedCategory={feed.category} onCategoryChange={feed.setCategory} />
+      {feed.loading && <p role="status">게시물을 불러오는 중...</p>}
+      {feed.nextCursor && <button type="button" disabled={feed.loading} onClick={feed.loadMore}>더 보기</button>}
     </MainLayout>
   );
 }

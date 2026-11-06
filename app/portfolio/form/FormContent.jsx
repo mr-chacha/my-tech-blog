@@ -10,7 +10,7 @@ export default function PortfolioFormContent() {
   const searchParams = useSearchParams();
   const editId = searchParams.get("id");
 
-  const { userInfo, setIsLoading, setActiveModal, setModalMessage } = useZustandStore();
+  const { userInfo, authReady, setIsLoading, setActiveModal, setModalMessage } = useZustandStore();
   const { postImage, createPortfolio, updatePortfolio, fetchPortfolioItem } = useBlogApis();
 
   const [title, setTitle] = useState("");
@@ -24,10 +24,10 @@ export default function PortfolioFormContent() {
   const fileInputRef = useRef(null);
 
   useEffect(() => {
-    if (!userInfo) {
-      router.push("/login");
+    if (authReady && !userInfo) {
+      router.replace("/login");
     }
-  }, [userInfo, router]);
+  }, [authReady, userInfo, router]);
 
   useEffect(() => {
     if (!editId || !userInfo) return;
@@ -74,9 +74,8 @@ export default function PortfolioFormContent() {
 
     try {
       setIsUploading(true);
-      const fileName = `portfolio/${Date.now()}-${file.name}`;
-      const uploadedUrl = await postImage(fileName, file);
-      setImage(uploadedUrl);
+      const uploadedUrl = await postImage(file);
+      setImage(uploadedUrl.url);
     } catch (error) {
       console.error("이미지 업로드 실패:", error);
       setActiveModal({ oneButtonModal: true });
@@ -150,7 +149,7 @@ export default function PortfolioFormContent() {
     }
   };
 
-  if (!userInfo) return null;
+  if (!authReady || !userInfo) return <p role="status">인증 확인 중...</p>;
 
   return (
     <Page>

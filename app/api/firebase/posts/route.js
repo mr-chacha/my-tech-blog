@@ -1,42 +1,22 @@
+import { revalidatePath } from "next/cache";
+import { getPostPage } from "@/lib/posts";
+import { InputError, validatePostInput } from "@/lib/post-input.mjs";
 import { NextResponse } from "next/server";
-import { getDb } from "@/lib/firebase-admin";
+import { saveResource } from "@/lib/resource-store";
 import { verifyToken, isAdmin } from "@/lib/auth";
 
-// GET /api/firebase/posts - 전체 포스트 조회
+export const dynamic = "force-dynamic";
+
+// Public and administrator list responses are never shared by a cache.
 export async function GET(request) {
   try {
     const user = await verifyToken(request);
-
-    const snapshot = await getDb().collection("posts").orderBy("createdAt", "desc").get();
-    let posts = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-
-    // 일반 사용자는 공개 포스트만 조회
-    if (!user || !isAdmin(user)) {
-      posts = posts.filter((post) => post.published !== false);
-    }
-
-    return NextResponse.json(posts);
+    const posts = await getPostPage(new URL(request.url).searchParams, isAdmin(user));
+    return NextResponse.json(posts, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
-    console.error("Get posts error:", error?.message || error);
-    const envStatus = {
-      FIREBASE_PROJECT_ID: Boolean(process.env.FIREBASE_PROJECT_ID),
-      FIREBASE_CLIENT_EMAIL: Boolean(process.env.FIREBASE_CLIENT_EMAIL),
-      FIREBASE_PRIVATE_KEY: Boolean(process.env.FIREBASE_PRIVATE_KEY),
-      FIREBASE_PRIVATE_KEY_BASE64: Boolean(process.env.FIREBASE_PRIVATE_KEY_BASE64),
-    };
-    return NextResponse.json(
-      {
-        error: "Failed to fetch posts",
-        code: "FIREBASE_ADMIN_ERROR",
-        // 값(시크릿)은 절대 포함하지 않음. 존재 여부만.
-        envStatus,
-        hint: "Amplify에 FIREBASE_PROJECT_ID / FIREBASE_CLIENT_EMAIL / FIREBASE_PRIVATE_KEY 가 있는지 확인하고 재배포하세요.",
-      },
-      { status: 500 }
-    );
+    if (error instanceof InputError) return NextResponse.json({ error: error.message }, { status: error.status });
+    console.error("Get posts error:", error?.message);
+    return NextResponse.json({ error: "게시물을 불러오지 못했습니다." }, { status: 500 });
   }
 }
 
@@ -48,15 +28,14 @@ export async function POST(request) {
       return NextResponse.json({ error: "Admin access required" }, { status: 403 });
     }
 
-    const postData = await request.json();
-    const docRef = await getDb().collection("posts").add({
-      ...postData,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
+    const postData = validatePostInput(await request.json());
+    const id = await saveResource("posts", null, postData, user, "create");
 
-    return NextResponse.json({ id: docRef.id, ...postData }, { status: 201 });
+    revalidatePath("/");
+    revalidatePath("/sitemap.xml");
+    return NextResponse.json({ id }, { status: 201 });
   } catch (error) {
+    if (error instanceof InputError || error instanceof SyntaxError) return NextResponse.json({ error: error.message }, { status: error.status || 400 });
     console.error("Create post error:", error);
     return NextResponse.json({ error: "Failed to create post" }, { status: 500 });
   }
