@@ -46,9 +46,29 @@ test('cursor cannot cross category or auth scope and bad/massive cursors/limits 
   for(const limit of ['0','51','bad','-1']) assert.throws(()=>postIndex.readPageOptions(new URLSearchParams({limit}),false));
   assert.throws(()=>postIndex.readPageOptions(new URLSearchParams({cursor:'not-json'}),false));
 });
-test('list fails explicitly before migration instead of silently hiding legacy documents', async () => {
-  const source=await postsSource({doc:()=>({get:async()=>({data:()=>({status:'migrating'})})})});
-  await assert.rejects(source.getPostPage(),(error)=>error.status===503);
+test('unmigrated lists preserve pagination, category totals and private metadata boundaries', async () => {
+  const docs = [
+    { id: 'a', data: () => post },
+    { id: 'b', data: () => post },
+    { id: 'secret', data: () => ({ ...post, isPrivate: true, category: 'Secret' }) },
+    { id: 'c', data: () => ({ ...post, category: 'CSS' }) },
+  ];
+  const db = { doc: () => ({ get: async () => ({ data: () => undefined }) }), collection: () => ({ select: (...fields) => {
+    assert.equal(fields.includes('content'), false);
+    return { get: async () => ({ docs }) };
+  } }) };
+  const source = await postsSource(db);
+  const first = await source.getPostPage(new URLSearchParams({ limit: '1', category: 'React' }));
+  assert.equal(first.posts[0].id, 'b');
+  assert.equal(first.total, 3);
+  assert.equal(first.categories.some((entry) => entry.name === 'Secret'), false);
+  assert.equal('content' in first.posts[0], false);
+  const second = await source.getPostPage(new URLSearchParams({ limit: '1', category: 'React', cursor: first.nextCursor }));
+  assert.equal(second.posts[0].id, 'a');
+  assert.equal(second.nextCursor, null);
+  const admin = await source.getPostPage(new URLSearchParams(), true);
+  assert.equal(admin.posts.length, 4);
+  assert.equal(admin.total, 4);
 });
 test('catalog tracks visibility and category changes without revealing private counts', () => {
   let catalog=postIndex.changeCatalog(null,null,post);
